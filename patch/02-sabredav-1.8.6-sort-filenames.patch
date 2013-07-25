@@ -1,0 +1,41 @@
+diff -ruN ../SabreDAV-orig//lib/Sabre/DAV/Browser/Plugin.php ./lib/Sabre/DAV/Browser/Plugin.php
+--- ../SabreDAV-orig//lib/Sabre/DAV/Browser/Plugin.php	2013-01-07 12:12:47.000000000 +0100
++++ ./lib/Sabre/DAV/Browser/Plugin.php	2013-01-07 12:16:54.000000000 +0100
+@@ -277,6 +277,9 @@
+ 
+         }
+ 
++        // Sort files by href (filename):
++        uasort($files, 'self::compare_filenames');
++
+         foreach($files as $file) {
+ 
+             // This is the current directory, we can skip it
+@@ -502,4 +505,27 @@
+ 
+     }
+ 
++    /* Helper function for uasort; sort file list: directories before files, else alphabetically */
++    private function compare_filenames ($a, $b)
++    {
++        $isdir_a = $isdir_b = FALSE;
++        if (isset($a[200]['{DAV:}resourcetype'])) {
++                $isdir_a = $a[200]['{DAV:}resourcetype']->getValue();
++                $isdir_a = (isset($isdir_a[0]) && $isdir_a[0] == '{DAV:}collection');
++        }
++        if (isset($b[200]['{DAV:}resourcetype'])) {
++                $isdir_b = $b[200]['{DAV:}resourcetype']->getValue();
++                $isdir_b = (isset($isdir_b[0]) && $isdir_b[0] == '{DAV:}collection');
++        }
++        /* Unequal types? Directories always win: */
++        if ($isdir_a && !$isdir_b) return -1;
++        if ($isdir_b && !$isdir_a) return 1;
++
++        /* Equal types? Sort alphabetically: */
++        if (!isset($a['href']) || !isset($b['href']) || $a['href'] == $b['href']) {
++            return 0;
++        }
++        return strcasecmp($a['href'], $b['href']);
++    }
++
+ }

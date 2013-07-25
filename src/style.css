@@ -1,0 +1,83 @@
+/* $Id: style.css,v 1.4 2013/01/30 16:38:05 alfred Exp $ */
+
+html {
+	font-family: arial, sans-serif;
+	font-size: 100%;
+}
+a {
+	text-decoration: none;
+}
+a img {
+	border: 0px;
+}
+address {
+	margin-top: 2em;
+	font-size: small;
+	font-style: normal;
+	color: #909498;
+}
+table {
+	background-color: #c4c4cb;
+	border-spacing: 0px 1px;
+	border-left: 1px solid #c4c4cb;
+	border-right: 1px solid #c4c4cb;
+	width: 100%;
+}
+h1 {
+	margin: 0px 0px 0.5em 0px;
+	padding: 0px;
+	font-weight: normal;
+	font-size: 16pt;
+}
+th {
+	font-size: 10pt;
+	text-align: left;
+	padding: 0.3em 0.5em;
+	font-weight: bold;
+}
+td {
+	font-size: 9pt;
+	padding: 0.3em 0.5em;
+}
+tr.dir {
+	background-color: #d8d8e2;
+}
+tr.dir:hover {
+	background-color: #e0e0ee;
+}
+tr.file {
+	background-color: #e8e8e8;
+}
+tr.file:hover {
+	background-color: #f0f0f0;
+}
+tr.collection img, tr.file img {
+	vertical-align: middle;
+}
+table#actions {
+	margin: 10px 0px;
+	width: auto;
+}
+table#actions td {
+	background-color: #f0f2f4;
+	padding: 0.5em;
+}
+table#actions h3 {
+	margin-right: 2em;
+	display: inline;
+}
+table#actions label {
+	width: 20px;
+}
+p#logout {
+	float: right;
+	font-size: 12pt;
+	margin: 0px;
+}
+p#manual {
+	float: right;
+	font-size: 12pt;
+	margin: 0px 1em 0px 0px;
+	padding-right: 1em;
+	border-right: 2px solid #d8d8e2;
+}

@@ -1,0 +1,8 @@
+# Ignore this file for export:
+.gitattributes export-ignore
+
+# These .gitignore files ensure the (otherwise empty) directory stays in
+# the repo, but these placeholder files shouldn't be exported themselves:
+src/data/.gitignore export-ignore
+src/lib/.gitignore export-ignore
+src/log/.gitignore export-ignore
