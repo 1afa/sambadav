@@ -1,22 +1,22 @@
 <?php
 
-// Configure the shares you would like to be visible in the Webfolders root
-// here. Any shares you configure show up in the root folder under the name of
-// the share. If you want your shares to be contained in root folders named
-// after the server, see share_extra.inc.php.
+// Configure the shares you would like to be visible in the SambaDAV root here.
+// Any shares you configure show up in the root folder under the name of the
+// *share*. If you want your shares to be contained in root folders named after
+// the *server*, see share_extra.inc.php.
 //
 // $share_root is an array containing arrays with servers and shares. If you
 // specify a server and a share, that share on that server will show up in the
-// Webfolders root under the name of the share. If you specify only a server
-// name, Webfolders will autodiscover the available shares on that server with
-// a (cached) call to 'smbclient -L', and make all those shares available
+// SambaDAV root under the name of the share. If you specify only a server
+// name, SambaDAV will autodiscover the available shares on that server with a
+// (cached) call to 'smbclient -L', and make all those shares available
 // directly at the top level. E.g. if you want the following folder structure:
 //
-// - data
-// - finance
-// - SERVERTWO
-//   - web
-//   - photos
+//   data
+//   finance
+//   SERVERTWO
+//     web
+//     photos
 //
 // ... you would configure the 'data' and 'finance' shares here, and the
 // SERVERTWO shares in share_extra.inc.php.

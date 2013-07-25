@@ -1,3 +1,6 @@
-* Wed Jul 24 2013 Alfred Klomp <alfred@bokxing-it.nl> 0.1
+- Config files: change remaining references to the old internal 'Webfolders'
+  name to the new name for the open-source project, 'SambaDAV'.
+
+* Wed Jul 24 2013 Alfred Klomp <alfred@bokxing-it.nl> v0.1
 - Adapt the `webfolders` internal project into a standalone project called
   SambaDAV, to be open-sourced and hosted on GitHub.

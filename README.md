@@ -432,17 +432,18 @@ $share_root = array(
 `$share_root` is an array of arrays. Each child array consists of one or two
 strings. The first string is the name of a server, the second string is
 optional and is the name of a share on that server. If you don't specify a
-share name, SambaDAV will use a `smbclient -L` call to automatically retrieve
-a list of available shares on that server.
+share name, SambaDAV will use a `smbclient -L` call to automatically retrieve a
+list of available shares on that server (which may or may not be accessible to
+the user).
 
-`$share_root` is so called because the shares that you specify here are shown
-directly in the root. In the example above, the root folder would have multiple
-subfolders: a folder for each share found on `server1`, and the folders `share1`
-and `share2`.
+`$share_root` is so called because the shares that you specify here are placed
+directly in the root as folders with the name of the *share*. In the example
+above, the root folder would have multiple subfolders: a folder for each share
+found on `server1`, and the folders `share1` and `share2`.
 
 `$share_extra` is like `$share_root`, but shares and servers that you define in
-that array are always placed in the root of the Webfolders in a folder with the
-name of the *server*, containing subfolders named after the shares.
+that array are always placed in the SambaDAV root in a folder with the name of
+the *server*, containing subfolders named after the shares.
 
 ```php
 <?php
@@ -569,12 +570,6 @@ running:
   Windows XP support, you must setup a plain HTTP server that redirects all
   requests to an SSL server with a valid SSL certificate. See the
   [Config](#webserver-configuration) section.
-
-- Some clients, notably Windows XP, work best when the Webfolders are served
-  from the server root. If the Webfolders are installed deeper down in a
-  directory somewhere, you can use rewrite rules to transparently rewrite the
-  URLs for certain clients. See the [config section](#webserver-configuration)
-  for examples.
 
 More information can be found in the [SabreDAV wiki](http://code.google.com/p/sabredav/w/list?q=label:Clients).
 
