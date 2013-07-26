@@ -1,4 +1,4 @@
-<?php
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 
 // Configure the shares you would like to be visible in the SambaDAV root here.
 // Any shares you configure show up in the root folder under the name of the

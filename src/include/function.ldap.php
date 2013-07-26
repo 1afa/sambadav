@@ -1,4 +1,4 @@
-<?php	// $Id: function.ldap.php,v 1.12 2013/07/23 16:04:33 alfred Exp $
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 /*
  * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
  *

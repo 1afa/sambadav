@@ -1,4 +1,4 @@
-<?php	// $Id: server.php,v 1.26 2013/07/24 09:08:43 alfred Exp $
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 /*
  * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
  *

@@ -1,4 +1,4 @@
-<?php
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 
 // This variable MUST be set to TRUE for SambaDAV to work; server.php will exit
 // with a 404 error if this variable has any other value than TRUE. Rationale

@@ -1,4 +1,4 @@
-<?php
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 
 // This file contains share definitions in the same syntax as
 // share_root.inc.php, but the difference is that shares defined here are

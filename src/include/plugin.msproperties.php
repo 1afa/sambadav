@@ -1,4 +1,4 @@
-<?php	// $Id: plugin.msproperties.php,v 1.6 2013/07/24 09:08:44 alfred Exp $
+<?php	// $Format:SambaDAV: commit %h @ %cd$
 /*
  * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
  *
