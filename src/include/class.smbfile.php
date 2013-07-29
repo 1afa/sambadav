@@ -203,8 +203,8 @@ class SMBFile extends DAV\FSExt\File
 	{
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
-		$props_on = array();
-		$props_off = array();
+		$flags_on = array();
+		$flags_off = array();
 		$modeflags = array();
 		$invalidate = FALSE;
 
@@ -243,22 +243,22 @@ class SMBFile extends DAV\FSExt\File
 							continue;
 						}
 						if ($bool === 0) {
-							$props_on[$flag] = TRUE;
+							$flags_on[$flag] = TRUE;
 						}
 						else {
-							$props_off[$flag] = TRUE;
+							$flags_off[$flag] = TRUE;
 						}
 					}
 					break;
 
 				case '{DAV:}ishidden':
-					if ($val == 1) $props_on['h'] = TRUE;
-					if ($val == 0) $props_off['h'] = TRUE;
+					if ($val == 1) $flags_on['h'] = TRUE;
+					if ($val == 0) $flags_off['h'] = TRUE;
 					break;
 
 				case '{DAV:}isreadonly':
-					if ($val == 1) $props_on['r'] = TRUE;
-					if ($val == 0) $props_off['r'] = TRUE;
+					if ($val == 1) $flags_on['r'] = TRUE;
+					if ($val == 0) $flags_off['r'] = TRUE;
 					break;
 
 				default:
@@ -268,11 +268,11 @@ class SMBFile extends DAV\FSExt\File
 		}
 		// Set modeflags in two steps: first batch the flags that are
 		// turned off, then batch the flags that are turned on:
-		if (count($props_off)) {
-			$modeflags[] = '-' . implode(array_keys($props_off));
+		if (count($flags_off)) {
+			$modeflags[] = '-' . implode(array_keys($flags_off));
 		}
-		if (count($props_on)) {
-			$modeflags[] = '+' . implode(array_keys($props_on));
+		if (count($flags_on)) {
+			$modeflags[] = '+' . implode(array_keys($flags_on));
 		}
 		foreach ($modeflags as $modeflag) {
 			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
