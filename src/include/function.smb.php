@@ -55,8 +55,8 @@ function smb_proc_open ($user, $pass, $args, $smbcmd, &$proc, &$fds)
 		$args .= ' '.SMBCLIENT_EXTRA_OPTS;
 	}
 	$cmd = ($anonymous)
-		? sprintf('%s -N %s', SMBCLIENT_PATH, $args)
-		: sprintf('%s -A /proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
+		? sprintf('%s --debuglevel=0 --no-pass %s', SMBCLIENT_PATH, $args)
+		: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
 
 	if (FALSE($proc = proc_open($cmd, $pipes, $fds, '/', $env)) || !is_resource($proc)) {
 		return FALSE;
@@ -200,7 +200,7 @@ function smb_get_status ($fds)
 
 function smb_get_resources ($user, $pass, $server)
 {
-	$args = sprintf('-g -L %s', escapeshellarg("//$server"));
+	$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
 
 	if (FALSE(smb_proc_open($user, $pass, $args, FALSE, $proc, $fds))) {
 		return STATUS_SMBCLIENT_ERROR;
@@ -274,7 +274,7 @@ function smb_du ($user, $pass, $server, $share)
 {
 	log_trace("smb_du \"//$server/$share\"\n");
 
-	$args = sprintf('%s -D /', escapeshellarg("//$server/$share"));
+	$args = sprintf('%s --directory /', escapeshellarg("//$server/$share"));
 	$scmd = smb_mk_cmd('/', 'du');
 
 	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
