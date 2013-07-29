@@ -353,6 +353,11 @@ comments in the file itself for more information. Some notes:
   not start with `SERVER_BASEDIR`, `server.php` appends it during the setup of
   the SabreDAV server.
 
+- `SMBCLIENT_EXTRA_OPTS` is an optional string containing extra arguments to
+  pass to `smbclient`. For example, you can specify a nonstandard port by
+  adding `--port 6789`. The option string is pasted verbatim and unescaped at
+  the end of the `smbclient` invocation.
+
 - `ANONYMOUS_ONLY` allows _only_ anonymous logins, and consequently bypasses
   the whole basic authentication logic, because credentials are no longer
   necessary. This setting is for people who allow guest access to their shares.

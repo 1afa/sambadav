@@ -25,6 +25,10 @@ define('SERVER_BASEDIR', '/webfolders/');
 // Full path to the smbclient utility:
 define('SMBCLIENT_PATH', '/usr/bin/smbclient');
 
+// Extra options to smbclient, pasted verbatim on commandline if not FALSE;
+// see manpage for smbclient; example: '--port 6789 -O TCP_NODELAY'
+define('SMBCLIENT_EXTRA_OPTS', FALSE);
+
 // Allow anonymous logins/browsing (no username/pass):
 define('ANONYMOUS_ALLOW', FALSE);
 

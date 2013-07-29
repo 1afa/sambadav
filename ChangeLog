@@ -1,3 +1,4 @@
+- Add SMBCLIENT_EXTRA_OPTS config variable, to pass extra options to smbclient;
 - SMBFile::updateProperties(): update flags on files by calling the `setmode`
   command of smbclient. Add a decoder function for the Win32 property string,
   because Win32 passes its file flags in that form. Unfortunately, files appear

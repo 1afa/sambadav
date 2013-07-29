@@ -49,7 +49,11 @@ function smb_proc_open ($user, $pass, $args, $smbcmd, &$proc, &$fds)
 	// is set and not all credentials are filled:
 	$anonymous = ANONYMOUS_ONLY || (ANONYMOUS_ALLOW && (FALSE($user) || FALSE($pass)));
 
-	// $args is assumed to have been shell-escaped by caller:
+	// $args is assumed to have been shell-escaped by caller;
+	// append any extra smbclient options if specified:
+	if (defined('SMBCLIENT_EXTRA_OPTS') && is_string(SMBCLIENT_EXTRA_OPTS)) {
+		$args .= ' '.SMBCLIENT_EXTRA_OPTS;
+	}
 	$cmd = ($anonymous)
 		? sprintf('%s -N %s', SMBCLIENT_PATH, $args)
 		: sprintf('%s -A /proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
