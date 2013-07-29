@@ -391,7 +391,14 @@ function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
 
 function smb_mk_cmd ($path, $cmd)
 {
-	// First cd to the path, then run the command:
+	// First cd to the path, then run the command.
+	// There's a reason we create a two-part command with a 'cd' to reach
+	// the destination directory instead of using the more obvious
+	// '--directory' switch. This method allows arbitrarily long directory
+	// names, does not leak the directory information to the process table,
+	// and avoids the pitfalls associated with shell escaping. The code
+	// paths taken internally by smbclient are virtually identical anyway.
+
 	return "cd \"$path\"\n$cmd";
 }
 
