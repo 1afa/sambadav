@@ -53,5 +53,34 @@ function win32_propstring ($isReadonly, $isHidden, $isSystem, $isDir, $isArchive
 	$isDir      = ($isDir)      ? 0x0010 : 0;
 	$isArchive  = ($isArchive)  ? 0x0020 : 0;
 
-	return sprintf("%08x", $isReadonly | $isHidden | $isSystem | $isDir | $isArchive);
+	return sprintf('%08x', $isReadonly | $isHidden | $isSystem | $isDir | $isArchive);
+}
+
+function win32_propstring_decode ($propstring)
+{
+	$ret = array
+		( 'r' => 0	// readonly
+		, 'h' => 0	// hidden
+		, 's' => 0	// system
+		, 'd' => 0	// directory
+		, 'a' => 0	// archive
+		) ;
+
+	if (strlen($propstring = (string)$propstring) !== 8) {
+		return FALSE;
+	}
+	// Special constant for "no flags set":
+	if ($propstring === '00000080') {
+		return $ret;
+	}
+	if (sscanf($propstring, '%08x', $flags) != 1) {
+		return FALSE;
+	}
+	$ret['r'] = ($flags & 0x0001) ? 1 : 0;
+	$ret['h'] = ($flags & 0x0002) ? 1 : 0;
+	$ret['s'] = ($flags & 0x0004) ? 1 : 0;
+	$ret['d'] = ($flags & 0x0010) ? 1 : 0;
+	$ret['a'] = ($flags & 0x0020) ? 1 : 0;
+
+	return $ret;
 }

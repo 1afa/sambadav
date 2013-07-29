@@ -446,6 +446,12 @@ function smb_rmdir ($user, $pass, $server, $share, $path, $dirname)
 		"rmdir \"$dirname\"");
 }
 
+function smb_setmode ($user, $pass, $server, $share, $path, $filename, $modeflags)
+{
+	return smb_cmd_simple($user, $pass, $server, $share, $path,
+		"setmode \"$filename\" \"$modeflags\"");
+}
+
 function smb_allinfo ($user, $pass, $server, $share, $path, $dirname)
 {
 	return smb_cmd_simple($user, $pass, $server, $share, $path,

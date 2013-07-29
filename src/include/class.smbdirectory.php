@@ -341,6 +341,12 @@ class SMBDirectory extends DAV\FSExt\Directory
 		// By default, Sabre wants to save these properties in a file in the
 		// root called .sabredav, but that location is not writable in our
 		// setup. Silently ignore for now.
+
+		// In SMBFile::updateProperties(), we use smbclient's `setmode`
+		// command to set file flags. Unfortunately, that command only
+		// appears to work for files, not directories. So even though
+		// we know how to decipher the Win32 propstring we're given, we
+		// have no way of setting the flags in the backend.
 		return TRUE;
 	}
 

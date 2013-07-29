@@ -202,6 +202,12 @@ class SMBFile extends DAV\FSExt\File
 	function updateProperties ($mutations)
 	{
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
+
+		$props_on = array();
+		$props_off = array();
+		$modeflags = array();
+		$invalidate = FALSE;
+
 		foreach ($mutations as $key => $val) {
 			switch ($key) {
 				case '{urn:schemas-microsoft-com:}Win32CreationTime':
@@ -213,15 +219,76 @@ class SMBFile extends DAV\FSExt\File
 
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
-					// We know how to decode these flags (see
-					// win32_propstring()), but still silently ignore since
-					// smbclient unfortunately has no 'chmod' operation:
+					// Decode into array of flags:
+					if (FALSE($newflags = win32_propstring_decode($val))) {
+						continue;
+					}
+					// Get current flag values to find out what changed:
+					$curflags = array
+						( 'r' => $this->getIsReadonly()
+						, 'h' => $this->getIsHidden()
+						, 's' => $this->getIsSystem()
+						, 'a' => $this->getIsArchive()
+						) ;
+
+					// Loop over $curflags to purposefully ignore the 'd' flag
+					// that's present in $newflags: the 'd' flag is not settable
+					// by smbclient and will return an error (not that we should
+					// ever see it toggle). The only valid flags for smbclient's
+					// `setmode` command  are +-rhsa:
+					foreach ($curflags as $flag => $bool)
+					{
+						// Skip this flag if nothing changed:
+						if ($newflags[$flag] === $curflags[$flag]) {
+							continue;
+						}
+						if ($bool === 0) {
+							$props_on[$flag] = TRUE;
+						}
+						else {
+							$props_off[$flag] = TRUE;
+						}
+					}
+					break;
+
+				case '{DAV:}ishidden':
+					if ($val == 1) $props_on['h'] = TRUE;
+					if ($val == 0) $props_off['h'] = TRUE;
+					break;
+
+				case '{DAV:}isreadonly':
+					if ($val == 1) $props_on['r'] = TRUE;
+					if ($val == 0) $props_off['r'] = TRUE;
 					break;
 
 				default:
 					// TODO: logging!
 					break;
 			}
+		}
+		// Set modeflags in two steps: first batch the flags that are
+		// turned off, then batch the flags that are turned on:
+		if (count($props_off)) {
+			$modeflags[] = '-' . implode(array_keys($props_off));
+		}
+		if (count($props_on)) {
+			$modeflags[] = '+' . implode(array_keys($props_on));
+		}
+		foreach ($modeflags as $modeflag) {
+			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
+				case STATUS_OK:
+					$invalidate = TRUE;
+					continue;
+
+				case STATUS_NOTFOUND: $this->exc_notfound();
+				case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+				case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+				case STATUS_INVALID_NAME: $this->exc_forbidden();
+			}
+		}
+		if ($invalidate) {
+			// Parent must do a new 'ls' to refresh flags:
+			$this->invalidate_parent();
 		}
 		return TRUE;
 	}

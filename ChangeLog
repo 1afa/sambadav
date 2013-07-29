@@ -1,3 +1,8 @@
+- SMBFile::updateProperties(): update flags on files by calling the `setmode`
+  command of smbclient. Add a decoder function for the Win32 property string,
+  because Win32 passes its file flags in that form. Unfortunately, files appear
+  to only support setting the Hidden flag, and flags on directories cannot be
+  set at all.
 - Config files: change remaining references to the old internal 'Webfolders'
   name to the new name for the open-source project, 'SambaDAV'.
 
