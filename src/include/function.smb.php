@@ -274,7 +274,7 @@ function smb_du ($user, $pass, $server, $share)
 {
 	log_trace("smb_du \"//$server/$share\"\n");
 
-	$args = sprintf('%s --directory /', escapeshellarg("//$server/$share"));
+	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd('/', 'du');
 
 	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
