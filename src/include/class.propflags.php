@@ -89,21 +89,21 @@ class Propflags
 	{
 		// Returns an array with zero, one or two strings: the strings
 		// needed to go from flags in $this to $that, in `smbclient
-		// setmode` format (which does not support toggling the 'd'
-		// flag, so we skip it).
+		// setmode` format, so '+-shar'. Smbclient does not support
+		// toggling the 'd' flag, so we skip that one.
 
 		$ret = array();
 		$on = $off = '';
 
 		if (!$this->init || !$that->init) return $ret;
 
-		// Flags in $a but not in $b must be turned off:
+		// Flags in $this but not in $that must be turned off:
 		if ($this->s && !$that->s) $off .= 's';
 		if ($this->h && !$that->h) $off .= 'h';
 		if ($this->a && !$that->a) $off .= 'a';
 		if ($this->r && !$that->r) $off .= 'r';
 
-		// Flags not in $a but present in $b must be turned on:
+		// Flags not in $this but present in $that must be turned on:
 		if ($that->s && !$this->s) $on .= 's';
 		if ($that->h && !$this->h) $on .= 'h';
 		if ($that->a && !$this->a) $on .= 'a';
