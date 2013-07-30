@@ -115,6 +115,12 @@ class Propflags
 		return $ret;
 	}
 
+	public function set ($flag, $val)
+	{
+		$this->$flag = ((int)$val) ? 1 : 0;
+		$this->init = TRUE;
+	}
+
 	private function from_smbflags ($smbflags)
 	{
 		$this->s = (strpos($smbflags, 'S') === FALSE) ? 0 : 1;

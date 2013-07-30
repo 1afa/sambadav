@@ -181,7 +181,7 @@ class SMBFile extends DAV\FSExt\File
 	{
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
-		$new_flags = new Propflags();
+		$new_flags = clone $this->flags;
 		$invalidate = FALSE;
 
 		foreach ($mutations as $key => $val) {
@@ -200,13 +200,11 @@ class SMBFile extends DAV\FSExt\File
 					break;
 
 				case '{DAV:}ishidden':
-					$new_flags->h = ((int)$val) ? 1 : 0;
-					$new_flags->init = TRUE;
+					$new_flags->set('h', $val);
 					break;
 
 				case '{DAV:}isreadonly':
-					$new_flags->r = ((int)$val) ? 1 : 0;
-					$new_flags->init = TRUE;
+					$new_flags->set('r', $val);
 					break;
 
 				default:
@@ -214,8 +212,9 @@ class SMBFile extends DAV\FSExt\File
 					break;
 			}
 		}
-		// If $new_flags was untouched above, $new_flags->init will be
-		// FALSE and the ->diff() below will return an empty array:
+		// ->diff() returns an array with zero, one or two strings: the
+		// modeflags necessary to set and unset the proper flags with
+		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
 			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
 				case STATUS_OK:
