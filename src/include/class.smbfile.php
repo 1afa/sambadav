@@ -24,6 +24,7 @@ require_once 'common.inc.php';
 require_once 'function.smb.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
+require_once 'class.propflags.php';
 
 use Sabre\DAV;
 
@@ -49,7 +50,7 @@ class SMBFile extends DAV\FSExt\File
 		$this->share = $share;
 		$this->vpath = $vpath;
 		$this->fname = $entry[0];
-		$this->flags = $entry[1];
+		$this->flags = new Propflags($entry[1]);
 		$this->fsize = $entry[2];
 		$this->mtime = $entry[3];
 		$this->parent_path = $parent_path;
@@ -163,49 +164,24 @@ class SMBFile extends DAV\FSExt\File
 
 	function getIsHidden ()
 	{
-		// Look at the 'H' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'H'))) ? 0 : 1;
+		return ($this->flags->init) ? $this->flags->h : FALSE;
 	}
 
 	function getIsReadonly ()
 	{
-		// Look at the 'R' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'R'))) ? 0 : 1;
-	}
-
-	function getIsArchive ()
-	{
-		// Look at the 'A' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'A'))) ? 0 : 1;
-	}
-
-	function getIsSystem ()
-	{
-		// Look at the 'S' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'S'))) ? 0 : 1;
+		return ($this->flags->init) ? $this->flags->r : FALSE;
 	}
 
 	function getWin32Props ()
 	{
-		if (FALSE($h = $this->getIsHidden())) return FALSE;
-		if (FALSE($a = $this->getIsArchive())) return FALSE;
-		if (FALSE($r = $this->getIsReadonly())) return FALSE;
-		if (FALSE($s = $this->getIsSystem())) return FALSE;
-
-		return win32_propstring($r, $h, $s, FALSE, $a);
+		return $this->flags->to_win32();
 	}
 
 	function updateProperties ($mutations)
 	{
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
-		$flags_on = array();
-		$flags_off = array();
-		$modeflags = array();
+		$new_flags = new Propflags();
 		$invalidate = FALSE;
 
 		foreach ($mutations as $key => $val) {
@@ -220,45 +196,17 @@ class SMBFile extends DAV\FSExt\File
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
 					// Decode into array of flags:
-					if (FALSE($newflags = win32_propstring_decode($val))) {
-						continue;
-					}
-					// Get current flag values to find out what changed:
-					$curflags = array
-						( 'r' => $this->getIsReadonly()
-						, 'h' => $this->getIsHidden()
-						, 's' => $this->getIsSystem()
-						, 'a' => $this->getIsArchive()
-						) ;
-
-					// Loop over $curflags to purposefully ignore the 'd' flag
-					// that's present in $newflags: the 'd' flag is not settable
-					// by smbclient and will return an error (not that we should
-					// ever see it toggle). The only valid flags for smbclient's
-					// `setmode` command  are +-rhsa:
-					foreach ($curflags as $flag => $bool)
-					{
-						// Skip this flag if nothing changed:
-						if ($newflags[$flag] === $curflags[$flag]) {
-							continue;
-						}
-						if ($bool === 0) {
-							$flags_on[$flag] = TRUE;
-						}
-						else {
-							$flags_off[$flag] = TRUE;
-						}
-					}
+					$new_flags->from_win32($val);
 					break;
 
 				case '{DAV:}ishidden':
-					if ($val == 1) $flags_on['h'] = TRUE;
-					if ($val == 0) $flags_off['h'] = TRUE;
+					$new_flags->h = ((int)$val) ? 1 : 0;
+					$new_flags->init = TRUE;
 					break;
 
 				case '{DAV:}isreadonly':
-					if ($val == 1) $flags_on['r'] = TRUE;
-					if ($val == 0) $flags_off['r'] = TRUE;
+					$new_flags->r = ((int)$val) ? 1 : 0;
+					$new_flags->init = TRUE;
 					break;
 
 				default:
@@ -266,15 +214,9 @@ class SMBFile extends DAV\FSExt\File
 					break;
 			}
 		}
-		// Set modeflags in two steps: first batch the flags that are
-		// turned off, then batch the flags that are turned on:
-		if (count($flags_off)) {
-			$modeflags[] = '-' . implode(array_keys($flags_off));
-		}
-		if (count($flags_on)) {
-			$modeflags[] = '+' . implode(array_keys($flags_on));
-		}
-		foreach ($modeflags as $modeflag) {
+		// If $new_flags was untouched above, $new_flags->init will be
+		// FALSE and the ->diff() below will return an empty array:
+		foreach ($this->flags->diff($new_flags) as $modeflag) {
 			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
 				case STATUS_OK:
 					$invalidate = TRUE;
@@ -289,6 +231,7 @@ class SMBFile extends DAV\FSExt\File
 		if ($invalidate) {
 			// Parent must do a new 'ls' to refresh flags:
 			$this->invalidate_parent();
+			$this->flags = $this->new_flags;
 		}
 		return TRUE;
 	}

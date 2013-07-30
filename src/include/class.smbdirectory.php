@@ -24,6 +24,7 @@ require_once 'common.inc.php';
 require_once 'function.smb.php';
 require_once 'function.log.php';
 require_once 'function.cache.php';
+require_once 'class.propflags.php';
 
 // Dynamic shares config; these are optional includes:
 @include_once dirname(dirname(__FILE__)).'/config/share_root.inc.php';
@@ -58,7 +59,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		$this->pass = $pass;
 		$this->server = $server;
 		$this->share = $share;
-		$this->flags = $smbflags;
+		$this->flags = new Propflags($smbflags);
 		$this->vpath = FALSE($path) ? '/' : $path;
 		$this->parent_path = FALSE($parent_path) ? '/' : $parent_path;
 	}
@@ -233,49 +234,17 @@ class SMBDirectory extends DAV\FSExt\Directory
 
 	function getIsHidden ()
 	{
-		// Look at the 'H' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'H'))) ? 0 : 1;
+		return ($this->flags->init) ? $this->flags->h : FALSE;
 	}
 
 	function getIsReadonly ()
 	{
-		// This is apparently not defined for directories, only for files.
-		// Says Windows 7 when you try to make a directory read-only.
-		// Look at the 'R' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'R'))) ? 0 : 1;
-	}
-
-	function getIsArchive ()
-	{
-		// Look at the 'A' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'A'))) ? 0 : 1;
-	}
-
-	function getIsSystem ()
-	{
-		// Look at the 'S' flag in the parsed Samba attributes:
-		if (FALSE($this->flags)) return FALSE;
-		return (FALSE(strpos($this->flags, 'S'))) ? 0 : 1;
+		return ($this->flags->init) ? $this->flags->r : FALSE;
 	}
 
 	function getWin32Props ()
 	{
-		// The values below were experimentally observed on a Win7 machine:
-		// Values:   hidden  archive
-		// 00000030              X
-		// 00000012     X
-		// 00000032     X        X
-		// 00000080
-		// Readonly is only defined for the files *in* the directory.
-
-		if (FALSE($h = $this->getIsHidden())) return FALSE;
-		if (FALSE($a = $this->getIsArchive())) return FALSE;
-		if (FALSE($s = $this->getIsSystem())) return FALSE;
-
-		return win32_propstring(FALSE, $h, $s, TRUE, $a);
+		return $this->flags->to_win32();
 	}
 
 	function getQuotaInfo ()
