@@ -164,12 +164,12 @@ class SMBFile extends DAV\FSExt\File
 
 	function getIsHidden ()
 	{
-		return ($this->flags->init) ? $this->flags->h : FALSE;
+		return $this->flags->get('h');
 	}
 
 	function getIsReadonly ()
 	{
-		return ($this->flags->init) ? $this->flags->r : FALSE;
+		return $this->flags->get('r');
 	}
 
 	function getWin32Props ()

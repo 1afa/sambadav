@@ -44,7 +44,7 @@ class Propflags
 		, 'd' => 0x0010
 		) ;
 
-	public $init = FALSE;
+	private $init = FALSE;
 
 	public function __construct ($smbflags = FALSE)
 	{
@@ -121,8 +121,17 @@ class Propflags
 		$this->init = TRUE;
 	}
 
+	public function get ($flag)
+	{
+		return ($this->init) ? $this->flag : FALSE;
+	}
+
 	private function from_smbflags ($smbflags)
 	{
+		// The 'smbflags' are the ones found in the output of
+		// smbclient's `ls` command. They are case-sensitive. See
+		// ./source3/client/client.c in the Samba source tarball,
+		// function attr_str(), for a complete list of possible flags.
 		$this->s = (strpos($smbflags, 'S') === FALSE) ? 0 : 1;
 		$this->h = (strpos($smbflags, 'H') === FALSE) ? 0 : 1;
 		$this->a = (strpos($smbflags, 'A') === FALSE) ? 0 : 1;
