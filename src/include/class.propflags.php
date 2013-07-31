@@ -21,27 +21,44 @@
 
 class Propflags
 {
-	// We use the initialism 'shard' to order the flags; prevents typoes.
-	public $s = 0;	// System
-	public $h = 0;	// Hidden
-	public $a = 0;	// Archive
-	public $r = 0;	// Readonly
-	public $d = 0;	// Directory
+	// These flag letters are taken from /source3/client/client.c in the
+	// Samba source tarball, function attr_str(). These are the flags we
+	// can theoretically expect to see in smbclient's `ls` output.
+	// NB: the 'N' flag occurs twice in the smbclient source, but the
+	// NORMAL variant is never shown, so we interpret 'N' to always stand
+	// for NONINDEXED.
+	private $flags = array
+		( 'R' => 0	// FILE_ATTRIBUTE_READONLY
+		, 'H' => 0	// FILE_ATTRIBUTE_HIDDEN
+		, 'S' => 0	// FILE_ATTRIBUTE_SYSTEM
+		, 'D' => 0	// FILE_ATTRIBUTE_DIRECTORY
+		, 'A' => 0	// FILE_ATTRIBUTE_ARCHIVE
+	//	, 'N' => 0	// FILE_ATTRIBUTE_NORMAL
+		, 'T' => 0	// FILE_ATTRIBUTE_TEMPORARY
+		, 's' => 0	// FILE_ATTRIBUTE_SPARSE
+		, 'r' => 0	// FILE_ATTRIBUTE_REPARSE_POINT
+		, 'C' => 0	// FILE_ATTRIBUTE_COMPRESSED
+		, 'O' => 0	// FILE_ATTRIBUTE_OFFLINE
+		, 'N' => 0	// FILE_ATTRIBUTE_NONINDEXED
+		, 'E' => 0	// FILE_ATTRIBUTE_ENCRYPTED
+		) ;
 
-	// Taken from Samba, libcli/smb/smb_constants.h:
-	//   #define FILE_ATTRIBUTE_READONLY         0x0001L
-	//   #define FILE_ATTRIBUTE_HIDDEN           0x0002L
-	//   #define FILE_ATTRIBUTE_SYSTEM           0x0004L
-	//   #define FILE_ATTRIBUTE_DIRECTORY        0x0010L
-	//   #define FILE_ATTRIBUTE_ARCHIVE          0x0020L
-	//   #define FILE_ATTRIBUTE_NORMAL           0x0080L
-	// If none of the above qualifiers fits, the file is deemed 'NORMAL'.
+	// These values are from /libcli/smb/smb_constants.h in the Samba
+	// source tarball, they are the bitmask values for the Win32 property string:
 	private $bitmask = array
-		( 's' => 0x0004
-		, 'h' => 0x0002
-		, 'a' => 0x0020
-		, 'r' => 0x0001
-		, 'd' => 0x0010
+		( 'R' => 0x0001
+		, 'H' => 0x0002
+		, 'S' => 0x0004
+		, 'D' => 0x0010
+		, 'A' => 0x0020
+	//	, 'N' => 0x0080 // Skip the NORMAL flag: if we see an N, it always stands for NONINDEXED.
+		, 'T' => 0x0100
+		, 's' => 0x0200
+		, 'r' => 0x0400
+		, 'C' => 0x0800
+		, 'O' => 0x1000
+		, 'N' => 0x2000
+		, 'E' => 0x4000
 		) ;
 
 	private $init = FALSE;
@@ -57,12 +74,9 @@ class Propflags
 		 || sscanf($msflags, '%08x', $flags) !== 1) {
 			return $this->init = FALSE;
 		}
-		$this->s = ($flags & $this->bitmask['s']) ? 1 : 0;
-		$this->h = ($flags & $this->bitmask['h']) ? 1 : 0;
-		$this->a = ($flags & $this->bitmask['a']) ? 1 : 0;
-		$this->r = ($flags & $this->bitmask['r']) ? 1 : 0;
-		$this->d = ($flags & $this->bitmask['d']) ? 1 : 0;
-
+		foreach (array_keys($this->flags) as $flag) {
+			$this->flags[$flag] = ($flags & $this->bitmask[$flag]) ? 1 : 0;
+		}
 		return $this->init = TRUE;
 	}
 
@@ -75,12 +89,9 @@ class Propflags
 		// This is the string returned in the proprietary
 		// '{urn:schemas-microsoft-com:}Win32FileAttributes' DAV property,
 		// used by the DAV client in Windows.
-		if ($this->s) $msflags |= $this->bitmask['s'];
-		if ($this->h) $msflags |= $this->bitmask['h'];
-		if ($this->a) $msflags |= $this->bitmask['a'];
-		if ($this->r) $msflags |= $this->bitmask['r'];
-		if ($this->d) $msflags |= $this->bitmask['d'];
-
+		foreach (array_keys($this->flags) as $flag) {
+			if ($this->flags[$flag]) $msflags |= $this->bitmask[$flag];
+		}
 		// If no flags are set, return the special 'NORMAL' string:
 		return ($msflags === 0) ? '00000080' : sprintf('%08x', $msflags);
 	}
@@ -89,26 +100,22 @@ class Propflags
 	{
 		// Returns an array with zero, one or two strings: the strings
 		// needed to go from flags in $this to $that, in `smbclient
-		// setmode` format, so '+-shar'. Smbclient does not support
-		// toggling the 'd' flag, so we skip that one.
+		// setmode` format, so '+-shar'. These are the only flags that
+		// smbclient supports for toggling, so ignore the rest.
 
 		$ret = array();
 		$on = $off = '';
 
 		if (!$this->init || !$that->init) return $ret;
 
-		// Flags in $this but not in $that must be turned off:
-		if ($this->s && !$that->s) $off .= 's';
-		if ($this->h && !$that->h) $off .= 'h';
-		if ($this->a && !$that->a) $off .= 'a';
-		if ($this->r && !$that->r) $off .= 'r';
+		foreach (array('S','H','A','R') as $flag)
+		{
+			// Flags that are on in ours and off in theirs must be turned off:
+			if ($this->flags[$flag] && !$that->flags[$flag]) $off .= strtolower($flag);
 
-		// Flags not in $this but present in $that must be turned on:
-		if ($that->s && !$this->s) $on .= 's';
-		if ($that->h && !$this->h) $on .= 'h';
-		if ($that->a && !$this->a) $on .= 'a';
-		if ($that->r && !$this->r) $on .= 'r';
-
+			// Flags that are on in theirs and off in ours must be turned on:
+			if ($that->flags[$flag] && !$this->flags[$flag]) $on .= strtolower($flag);
+		}
 		if (strlen($off)) $ret[] = '-'.$off;
 		if (strlen($on))  $ret[] = '+'.$on;
 
@@ -117,27 +124,22 @@ class Propflags
 
 	public function set ($flag, $val)
 	{
-		$this->$flag = ((int)$val) ? 1 : 0;
+		$this->flags[$flag] = ((int)$val) ? 1 : 0;
 		$this->init = TRUE;
 	}
 
 	public function get ($flag)
 	{
-		return ($this->init) ? $this->flag : FALSE;
+		return ($this->init) ? $this->flags[$flag] : FALSE;
 	}
 
 	private function from_smbflags ($smbflags)
 	{
 		// The 'smbflags' are the ones found in the output of
-		// smbclient's `ls` command. They are case-sensitive. See
-		// ./source3/client/client.c in the Samba source tarball,
-		// function attr_str(), for a complete list of possible flags.
-		$this->s = (strpos($smbflags, 'S') === FALSE) ? 0 : 1;
-		$this->h = (strpos($smbflags, 'H') === FALSE) ? 0 : 1;
-		$this->a = (strpos($smbflags, 'A') === FALSE) ? 0 : 1;
-		$this->r = (strpos($smbflags, 'R') === FALSE) ? 0 : 1;
-		$this->d = (strpos($smbflags, 'D') === FALSE) ? 0 : 1;
-
+		// smbclient's `ls` command. They are case-sensitive.
+		foreach (array_keys($this->flags) as $flag) {
+			$this->flags[$flag] = (strpos($smbflags, $flag) === FALSE) ? 0 : 1;
+		}
 		return $this->init = TRUE;
 	}
 }
