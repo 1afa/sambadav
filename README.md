@@ -40,13 +40,17 @@ setting up a VPN.
 In the background, SambaDAV executes SMB commands on the user's behalf through
 `smbclient`, a commandline utility distributed with
 [Samba](http://www.samba.org), to issue requests to SMB/CIFS (i.e. Windows)
-fileservers. For example, when the user requests a file, SambaDAV will start an
-`smbclient` process in the background to retrieve the file and pass it through
-to the user as a bytestream. User authentication and all the actual Samba calls
-are handled by `smbclient` just as if the request was done on the command line.
-The resulting output (or bytestream) is parsed by SambaDAV to a WebDAV response
-(such as "here's the file", "file not found", or "could not authenticate") and
-sent back to the user. The WebDAV protocol is handled by
+fileservers. Currently, only Samba 3.x is supported; the version of `smbclient`
+bundled with Samba 4.x was completely rewritten and supports a different range
+of options.
+
+When the user requests a file, SambaDAV will spawn an `smbclient` child process
+to retrieve the file and pass it through to the user as a bytestream. User
+authentication and all the actual Samba calls are handled by `smbclient` just
+as if the request was done on the command line. The resulting output (or
+bytestream) is parsed by SambaDAV to a WebDAV response (such as "here's the
+file", "file not found", or "could not authenticate") and sent back to the
+user. The WebDAV protocol is handled by
 [SabreDAV](http://code.google.com/p/sabredav/), a WebDAV server library written
 in PHP.
 
@@ -616,8 +620,15 @@ specifics.
 
 ## Troubleshooting
 
-- Is your `smbclient` install working correctly? Do you get the expected output
-  when you execute:
+- Is your `smbclient` install working correctly? SambaDAV currently only
+  supports the version bundled with Samba 3.x. You can check the `smbclient`
+  version with:
+
+```sh
+smbclient --version
+```
+
+  It should have major version 3. Do you get the expected output when you execute:
 
 ```sh
 # Lookup shares list as guest:
@@ -627,8 +638,11 @@ smbclient -N -L //myserver
 smbclient -U myuser -L //myserver
 
 # Connect to a share as a specific user, get a file listing:
-smbclient -U myuser -c 'ls' '//myserver/myshare'
+smbclient -U myuser //myserver/myshare -c 'ls'
 ```
+
+  If these examples fail, try again with `--debuglevel=3` and carefully inspect
+  the output for errors.
 
 - If things are not working, try connecting to the server with a browser first.
   If your browser can't connect, or if you encounter certificate errors, fix
