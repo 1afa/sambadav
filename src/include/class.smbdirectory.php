@@ -234,12 +234,12 @@ class SMBDirectory extends DAV\FSExt\Directory
 
 	function getIsHidden ()
 	{
-		return $this->flags->get('h');
+		return $this->flags->get('H');
 	}
 
 	function getIsReadonly ()
 	{
-		return $this->flags->get('h');
+		return $this->flags->get('R');
 	}
 
 	function getWin32Props ()
