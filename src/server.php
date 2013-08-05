@@ -147,12 +147,3 @@ $server->addPlugin(new \SambaDAV\MSPropertiesPlugin());
 
 // And off we go!
 $server->exec();
-
-function server_get_tree ()
-{
-	// Horrible hack for the class objects to get their paws
-	// on the tree root node - they need that capability to
-	// locate their own parent and invalidate their parent's cache.
-	global $server;
-	return $server->tree;
-}

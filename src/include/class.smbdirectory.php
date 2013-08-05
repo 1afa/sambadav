@@ -49,11 +49,11 @@ class SMBDirectory extends DAV\FSExt\Directory
 	private $vpath = FALSE;		// virtual path from root of share
 	private $entries = FALSE;
 	private $flags = FALSE;		// SMB flags
-	private $parent_path = FALSE;
+	private $parent = FALSE;
 	private $user = FALSE;		// login credentials
 	private $pass = FALSE;
 
-	function __construct ($server, $share, $path, $parent_path, $smbflags, $user, $pass)
+	function __construct ($server, $share, $path, $parent, $smbflags, $user, $pass)
 	{
 		$this->user = $user;
 		$this->pass = $pass;
@@ -61,7 +61,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		$this->share = $share;
 		$this->flags = new Propflags($smbflags);
 		$this->vpath = FALSE($path) ? '/' : $path;
-		$this->parent_path = FALSE($parent_path) ? '/' : $parent_path;
+		$this->parent = $parent;
 	}
 
 	function getChildren ()
@@ -71,14 +71,14 @@ class SMBDirectory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if (FALSE($this->server)) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new SMBDirectory($entry[0], $entry[1], FALSE, $this->get_path(), 'D', $this->user, $this->pass);
+				$children[] = new SMBDirectory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
 		// If in root folder for given server, fetch all allowed shares for that server:
 		if (FALSE($this->share)) {
 			foreach ($this->server_root_entries() as $entry) {
-				$children[] = new SMBDirectory($this->server, $entry, FALSE, $this->get_path(), 'D', $this->user, $this->pass);
+				$children[] = new SMBDirectory($this->server, $entry, FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
@@ -103,7 +103,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		if (FALSE($this->server)) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new SMBDirectory($entry[0], $entry[1], FALSE, $this->get_path(), 'D', $this->user, $this->pass);
+					return new SMBDirectory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
 				}
 			}
 			$this->exc_notfound($name);
@@ -112,7 +112,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		// We have a server, but do we have a share?
 		if (FALSE($this->share)) {
 			if (in_array($name, $this->server_root_entries())) {
-				return new SMBDirectory($this->server, $name, FALSE, $this->get_path(), 'D', $this->user, $this->pass);
+				return new SMBDirectory($this->server, $name, FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			$this->exc_notfound($name);
 			return FALSE;
@@ -127,9 +127,9 @@ class SMBDirectory extends DAV\FSExt\Directory
 					continue;
 				}
 				if (FALSE(strpos($entry[1], 'D'))) {
-					return new SMBFile($this->server, $this->share, $this->vpath, $entry, $this->get_path(), $this->user, $this->pass);
+					return new SMBFile($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
 				}
-				return new SMBDirectory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this->get_path(), $entry[1], $this->user, $this->pass);
+				return new SMBDirectory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
 			}
 		}
 		$this->exc_notfound($this->pretty_name().$name);
@@ -342,12 +342,9 @@ class SMBDirectory extends DAV\FSExt\Directory
 
 	private function invalidate_parent ()
 	{
-		if (FALSE($server_tree = server_get_tree())
-		 || FALSE($parent = $server_tree->getNodeForPath($this->parent_path))) {
-			return;
+		if (!FALSE($this->parent)) {
+			$this->parent->cache_destroy();
 		}
-		$server_tree->markDirty($this->parent_path);
-		$parent->cache_destroy();
 	}
 
 	private function pretty_name ()
@@ -361,17 +358,6 @@ class SMBDirectory extends DAV\FSExt\Directory
 		if (substr($str, -1, 1) != '/') $str .= '/'; if (FALSE($this->vpath)) return $str; $str .= (($this->vpath[0] == '/') ? substr($this->vpath, 1) : $this->vpath);
 		if (substr($str, -1, 1) != '/') $str .= '/';
 		return $str;
-	}
-
-	private function get_path ()
-	{
-		$name = $this->getName();
-		if ($name[0] == '/') {
-			$name = substr($name, 1);
-		}
-		return (substr($this->parent_path, -1, 1) == '/')
-			? $this->parent_path . $name
-			: $this->parent_path . '/' . $name;
 	}
 
 	private function global_root_entries ()

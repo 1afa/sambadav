@@ -36,7 +36,7 @@ class SMBFile extends DAV\FSExt\File
 	private $mtime;		// Modification time (Unix timestamp)
 	private $fsize;		// File size (bytes)
 	private $flags;		// SMB flags
-	private $parent_path;
+	private $parent;	// Parent object
 
 	private $user;		// Login credentials
 	private $pass;
@@ -44,7 +44,7 @@ class SMBFile extends DAV\FSExt\File
 	private $proc;		// Global storage, so that these objects
 	private $fds;		// don't go out of scope when get() returns
 
-	function __construct ($server, $share, $vpath, $entry, $parent_path, $user, $pass)
+	function __construct ($server, $share, $vpath, $entry, $parent, $user, $pass)
 	{
 		$this->server = $server;
 		$this->share = $share;
@@ -53,7 +53,7 @@ class SMBFile extends DAV\FSExt\File
 		$this->flags = new Propflags($entry[1]);
 		$this->fsize = $entry[2];
 		$this->mtime = $entry[3];
-		$this->parent_path = $parent_path;
+		$this->parent = $parent;
 
 		$this->user = $user;
 		$this->pass = $pass;
@@ -252,12 +252,9 @@ class SMBFile extends DAV\FSExt\File
 
 	private function invalidate_parent ()
 	{
-		if (FALSE($server_tree = server_get_tree())
-		 || FALSE($parent = $server_tree->getNodeForPath($this->parent_path))) {
-			return;
+		if (!FALSE($this->parent)) {
+			$this->parent->cache_destroy();
 		}
-		$server_tree->markDirty($this->parent_path);
-		$parent->cache_destroy();
 	}
 
 	private function pretty_name ()
