@@ -580,6 +580,24 @@ running:
   requests to an SSL server with a valid SSL certificate. See the
   [Config](#webserver-configuration) section.
 
+
+### Slow in Windows 7?
+
+The default configuration of the built-in Windows 7 WebDAV client sometimes
+makes network drives seem really slow to respond. A network share will take
+ages to connect and opening folders takes many seconds. Luckily, getting a
+snappy browsing experience is an easy fix:
+
+1. Open Internet Explorer.
+2. Open the `Tools` menu from the top menu bar.
+3. Click `Internet Options`. A window opens.
+4. In the window, open the `Connections` tab.
+5. Click the button `LAN settings` near the bottom. A second window opens.
+6. Uncheck the box marked `Automatically detect settings`.
+7. Click `Ok` on both the windows to close them.
+
+Try again and you should be able to connect and browse at normal speeds.
+
 More information can be found in the [SabreDAV wiki](http://code.google.com/p/sabredav/w/list?q=label:Clients).
 
 
