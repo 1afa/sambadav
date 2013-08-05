@@ -200,11 +200,11 @@ class SMBFile extends DAV\FSExt\File
 					break;
 
 				case '{DAV:}ishidden':
-					$new_flags->set('h', $val);
+					$new_flags->set('H', $val);
 					break;
 
 				case '{DAV:}isreadonly':
-					$new_flags->set('r', $val);
+					$new_flags->set('R', $val);
 					break;
 
 				default:
