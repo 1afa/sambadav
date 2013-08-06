@@ -19,6 +19,8 @@
  *
  */
 
+namespace SambaDAV;
+
 class Propflags
 {
 	// These flag letters are taken from /source3/client/client.c in the

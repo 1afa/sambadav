@@ -19,6 +19,8 @@
  *
  */
 
+namespace SambaDAV;
+
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
 require_once 'function.smb.php';
@@ -28,7 +30,7 @@ require_once 'class.propflags.php';
 
 use Sabre\DAV;
 
-class SMBFile extends DAV\FSExt\File
+class File extends DAV\FSExt\File
 {
 	private $share;		// Name of share
 	private $vpath;		// Name of the directory this file is in

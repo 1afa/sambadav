@@ -19,6 +19,8 @@
  *
  */
 
+namespace SambaDAV;
+
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
 require_once 'function.smb.php';
@@ -42,7 +44,7 @@ $share_root = array_merge($share_root, $share_archives);
 
 use Sabre\DAV;
 
-class SMBDirectory extends DAV\FSExt\Directory
+class Directory extends DAV\FSExt\Directory
 {
 	private $server = FALSE;	// server that the share is on
 	private $share = FALSE;		// name of the share
@@ -59,7 +61,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		$this->pass = $pass;
 		$this->server = $server;
 		$this->share = $share;
-		$this->flags = new Propflags($smbflags);
+		$this->flags = new \SambaDAV\Propflags($smbflags);
 		$this->vpath = FALSE($path) ? '/' : $path;
 		$this->parent = $parent;
 	}
@@ -71,14 +73,14 @@ class SMBDirectory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if (FALSE($this->server)) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new SMBDirectory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
+				$children[] = new \SambaDAV\Directory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
 		// If in root folder for given server, fetch all allowed shares for that server:
 		if (FALSE($this->share)) {
 			foreach ($this->server_root_entries() as $entry) {
-				$children[] = new SMBDirectory($this->server, $entry, FALSE, $this, 'D', $this->user, $this->pass);
+				$children[] = new \SambaDAV\Directory($this->server, $entry, FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
@@ -103,7 +105,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		if (FALSE($this->server)) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new SMBDirectory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
+					return new \SambaDAV\Directory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
 				}
 			}
 			$this->exc_notfound($name);
@@ -112,7 +114,7 @@ class SMBDirectory extends DAV\FSExt\Directory
 		// We have a server, but do we have a share?
 		if (FALSE($this->share)) {
 			if (in_array($name, $this->server_root_entries())) {
-				return new SMBDirectory($this->server, $name, FALSE, $this, 'D', $this->user, $this->pass);
+				return new \SambaDAV\Directory($this->server, $name, FALSE, $this, 'D', $this->user, $this->pass);
 			}
 			$this->exc_notfound($name);
 			return FALSE;
@@ -127,9 +129,9 @@ class SMBDirectory extends DAV\FSExt\Directory
 					continue;
 				}
 				if (FALSE(strpos($entry[1], 'D'))) {
-					return new SMBFile($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
+					return new \SambaDAV\File($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
 				}
-				return new SMBDirectory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
+				return new \SambaDAV\Directory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
 			}
 		}
 		$this->exc_notfound($this->pretty_name().$name);
@@ -306,16 +308,20 @@ class SMBDirectory extends DAV\FSExt\Directory
 
 	function updateProperties ($mutations)
 	{
-		// Stub function, see SMBFile::updateProperties() for more details.
-		// By default, Sabre wants to save these properties in a file in the
-		// root called .sabredav, but that location is not writable in our
-		// setup. Silently ignore for now.
 
-		// In SMBFile::updateProperties(), we use smbclient's `setmode`
-		// command to set file flags. Unfortunately, that command only
-		// appears to work for files, not directories. So even though
-		// we know how to decipher the Win32 propstring we're given, we
-		// have no way of setting the flags in the backend.
+		// Stub function, see \SambaDAV\File::updateProperties() for
+		// more details.
+		// By default, Sabre wants to save these properties in a file
+		// in the root called .sabredav, but that location is not
+		// writable in our setup. Silently ignore for now.
+
+		// In \SambaDAV\File::updateProperties(), we use smbclient's
+		// `setmode` command to set file flags. Unfortunately, that
+		// command only appears to work for files, not directories. So
+		// even though we know how to decipher the Win32 propstring
+		// we're given, we have no way of setting the flags in the
+		// backend.
+
 		return TRUE;
 	}
 

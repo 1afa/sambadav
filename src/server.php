@@ -94,7 +94,7 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	cache_clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new SMBDirectory(FALSE, FALSE, FALSE, FALSE, 'D', $user, $pass);
+$rootDir = new \SambaDAV\Directory(FALSE, FALSE, FALSE, FALSE, 'D', $user, $pass);
 
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);
