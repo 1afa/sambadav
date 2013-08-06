@@ -46,7 +46,7 @@ class File extends DAV\FSExt\File
 	private $proc;		// Global storage, so that these objects
 	private $fds;		// don't go out of scope when get() returns
 
-	function __construct ($server, $share, $vpath, $entry, $parent, $user, $pass)
+	public function __construct ($server, $share, $vpath, $entry, $parent, $user, $pass)
 	{
 		$this->server = $server;
 		$this->share = $share;
@@ -61,12 +61,12 @@ class File extends DAV\FSExt\File
 		$this->pass = $pass;
 	}
 
-	function getName ()
+	public function getName ()
 	{
 		return $this->fname;
 	}
 
-	function setName ($name)
+	public function setName ($name)
 	{
 		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 		switch (smb_rename($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $name)) {
@@ -82,7 +82,7 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	function get ()
+	public function get ()
 	{
 		// NB: because we return a file resource, we must ensure that the proc and fds object
 		// stay alive after we leave this function. So we use global class variables to store them.
@@ -104,7 +104,7 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	function put ($data)
+	public function put ($data)
 	{
 		log_trace('put "'.$this->pretty_name()."\"\n");
 		switch (smb_put($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $data, $md5)) {
@@ -119,7 +119,7 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	function putRange($data, $offset)
+	public function putRange ($data, $offset)
 	{
 		// Sorry bro, smbclient is not that advanced:
 		// Override the inherited method from the base class:
@@ -127,7 +127,7 @@ class File extends DAV\FSExt\File
 		throw new DAV\Exception\NotImplemented("PutRange() not available due to limitations of smbclient");
 	}
 
-	function getETag ()
+	public function getETag ()
 	{
 		log_trace('getETag "'.$this->pretty_name()."\"\n");
 		// Don't bother if the file is too large:
@@ -149,37 +149,37 @@ class File extends DAV\FSExt\File
 		return "\"$md5\"";
 	}
 
-	function getContentType ()
+	public function getContentType ()
 	{
 		return NULL;
 	}
 
-	function getSize ()
+	public function getSize ()
 	{
 		return $this->fsize;
 	}
 
-	function getLastModified ()
+	public function getLastModified ()
 	{
 		return $this->mtime;
 	}
 
-	function getIsHidden ()
+	public function getIsHidden ()
 	{
 		return $this->flags->get('H');
 	}
 
-	function getIsReadonly ()
+	public function getIsReadonly ()
 	{
 		return $this->flags->get('R');
 	}
 
-	function getWin32Props ()
+	public function getWin32Props ()
 	{
 		return $this->flags->to_win32();
 	}
 
-	function updateProperties ($mutations)
+	public function updateProperties ($mutations)
 	{
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
@@ -237,7 +237,7 @@ class File extends DAV\FSExt\File
 		return TRUE;
 	}
 
-	function delete ()
+	public function delete ()
 	{
 		log_trace('delete "'.$this->pretty_name()."\"\n");
 		switch (smb_rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {

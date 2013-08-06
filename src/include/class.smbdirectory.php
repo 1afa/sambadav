@@ -55,7 +55,7 @@ class Directory extends DAV\FSExt\Directory
 	private $user = FALSE;		// login credentials
 	private $pass = FALSE;
 
-	function __construct ($server, $share, $path, $parent, $smbflags, $user, $pass)
+	public function __construct ($server, $share, $path, $parent, $smbflags, $user, $pass)
 	{
 		$this->user = $user;
 		$this->pass = $pass;
@@ -66,7 +66,7 @@ class Directory extends DAV\FSExt\Directory
 		$this->parent = $parent;
 	}
 
-	function getChildren ()
+	public function getChildren ()
 	{
 		$children = array();
 
@@ -97,7 +97,7 @@ class Directory extends DAV\FSExt\Directory
 		return $children;
 	}
 
-	function getChild ($name)
+	public function getChild ($name)
 	{
 		log_trace('getChild "'.$this->pretty_name()."$name\"\n");
 
@@ -138,7 +138,7 @@ class Directory extends DAV\FSExt\Directory
 		return FALSE;
 	}
 
-	function createDirectory ($name)
+	public function createDirectory ($name)
 	{
 		log_trace('createDirectory "'.$this->pretty_name()."$name\"\n");
 
@@ -159,7 +159,7 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	function createFile ($name, $data = NULL)
+	public function createFile ($name, $data = NULL)
 	{
 		log_trace('createFile "'.$this->pretty_name()."$name\"\n");
 
@@ -179,7 +179,7 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	function childExists ($name)
+	public function childExists ($name)
 	{
 		// Are we the global root?
 		if (FALSE($this->server)) {
@@ -205,7 +205,7 @@ class Directory extends DAV\FSExt\Directory
 		return FALSE;
 	}
 
-	function getName ()
+	public function getName ()
 	{
 		if (FALSE($this->server)) return '/';
 		if (FALSE($this->share)) return $this->server;
@@ -213,7 +213,7 @@ class Directory extends DAV\FSExt\Directory
 		return basename($this->vpath);
 	}
 
-	function setName ($name)
+	public function setName ($name)
 	{
 		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 
@@ -234,22 +234,22 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	function getIsHidden ()
+	public function getIsHidden ()
 	{
 		return $this->flags->get('H');
 	}
 
-	function getIsReadonly ()
+	public function getIsReadonly ()
 	{
 		return $this->flags->get('R');
 	}
 
-	function getWin32Props ()
+	public function getWin32Props ()
 	{
 		return $this->flags->to_win32();
 	}
 
-	function getQuotaInfo ()
+	public function getQuotaInfo ()
 	{
 		log_trace('getQuotaInfo "'.$this->pretty_name()."\"\n");
 
@@ -286,7 +286,7 @@ class Directory extends DAV\FSExt\Directory
 		return FALSE;
 	}
 
-	function delete ()
+	public function delete ()
 	{
 		log_trace('delete "'.$this->pretty_name()."\"\n");
 
@@ -306,7 +306,7 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	function updateProperties ($mutations)
+	public function updateProperties ($mutations)
 	{
 
 		// Stub function, see \SambaDAV\File::updateProperties() for
@@ -325,7 +325,7 @@ class Directory extends DAV\FSExt\Directory
 		return TRUE;
 	}
 
-	function cache_destroy()
+	public function cache_destroy ()
 	{
 		cache_destroy('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
 		$this->entries = FALSE;
