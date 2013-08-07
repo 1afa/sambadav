@@ -34,10 +34,10 @@ use Sabre\DAV;
 use Sabre\HTTP;
 
 require_once 'lib/SabreDAV/vendor/autoload.php';
+require_once 'include/class.ldap.php';
 require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
 require_once 'include/function.cache.php';
-require_once 'include/function.ldap.php';
 require_once 'include/plugin.msproperties.php';
 
 // If ANONYMOUS_ONLY is set to TRUE in the config, don't require credentials;
@@ -80,10 +80,14 @@ else {
 		}
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
-		if (LDAP_AUTH && FALSE(ldap_verify($user, $pass, $ldap_groups))) {
-			sleep(2);
-			$auth->requireLogin();
-			die('Authentication required');
+		if (LDAP_AUTH) {
+			$ldap = new \SambaDAV\LDAP();
+
+			if (FALSE($ldap->verify($user, $pass, $ldap_groups))) {
+				sleep(2);
+				$auth->requireLogin();
+				die('Authentication required');
+			}
 		}
 	}
 }

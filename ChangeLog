@@ -1,3 +1,4 @@
+- Move LDAP auth logic into separate class;
 - Place Propflags, Directory and File classes in proper \SambaDAV\ namespace;
 - Simplify the way in which a Node finds its parent (parent passes a reference
   to itself in getChild() instead of a lookup based on the parent's path).
