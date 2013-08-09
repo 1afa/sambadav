@@ -23,79 +23,7 @@ require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
-
-function smb_proc_open ($user, $pass, $args, $smbcmd, &$proc, &$fds)
-{
-	// Returns TRUE on success, FALSE on error.
-	// Leaves open a bunch of file descriptors that
-	// can be used for reading/writing to the process.
-
-	$pipes = array(
-		0 => array('pipe', 'r'),	// child reads from stdin
-		1 => array('pipe', 'w'),	// child writes to stdout
-		2 => array('pipe', 'w'),	// child writes to stderr
-		3 => array('pipe', 'r'),	// child reads from fd#3
-		4 => array('pipe', 'r'),	// child reads from fd#4
-		5 => array('pipe', 'w')		// child writes to fd#5
-	);
-	$env = array(
-		'HOME' => '/dev/null',		// Nice restrictive environment
-		'SHELL' => '/bin/false',
-		// smbclient outputs filenames in utf8, also needs support in the environment
-		// (with an ASCII locale you only get the lower bytes):
-		'LC_ALL' => 'en_US.UTF-8'
-	);
-	// Do anonymous login if ANONYMOUS_ONLY is set, or if ANONYMOUS_ALLOW
-	// is set and not all credentials are filled:
-	$anonymous = ANONYMOUS_ONLY || (ANONYMOUS_ALLOW && (FALSE($user) || FALSE($pass)));
-
-	// $args is assumed to have been shell-escaped by caller;
-	// append any extra smbclient options if specified:
-	if (defined('SMBCLIENT_EXTRA_OPTS') && is_string(SMBCLIENT_EXTRA_OPTS)) {
-		$args .= ' '.SMBCLIENT_EXTRA_OPTS;
-	}
-	$cmd = ($anonymous)
-		? sprintf('%s --debuglevel=0 --no-pass %s', SMBCLIENT_PATH, $args)
-		: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
-
-	if (FALSE($proc = proc_open($cmd, $pipes, $fds, '/', $env)) || !is_resource($proc)) {
-		return FALSE;
-	}
-	// Write SMB command, if any, to stdin (fd0):
-	if (!FALSE($smbcmd)) {
-		if (FALSE(fwrite($fds[0], $smbcmd))) {
-			smb_proc_close($proc, $fds);
-			return FALSE;
-		}
-	}
-	// Write username and password to fd3:
-	if (FALSE($anonymous)) {
-		$creds = (FALSE($pass))
-			? "username=$user"
-			: "username=$user\npassword=$pass";
-
-		if (FALSE(fwrite($fds[3], $creds))) {
-			smb_proc_close($proc, $fds);
-			return FALSE;
-		}
-	}
-	// close read pipes, but leave stdout, stderr, fd4 and fd5 open:
-	fclose($fds[0]);
-	fclose($fds[3]);
-	return TRUE;
-}
-
-function smb_proc_close ($proc, $fds)
-{
-	for ($i = 0; $i < 6; $i++) {
-		if (isset($fds[$i]) && is_resource($fds[$i])) {
-			fclose($fds[$i]);
-		}
-	}
-	if (is_resource($proc)) {
-		proc_close($proc);
-	}
-}
+require_once 'class.smbprocess.php';
 
 function smb_get_line ($fd, &$nline)
 {
@@ -201,20 +129,19 @@ function smb_get_status ($fds)
 function smb_get_resources ($user, $pass, $server)
 {
 	$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
+	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE(smb_proc_open($user, $pass, $args, FALSE, $proc, $fds))) {
+	if (FALSE($proc->open($args, FALSE))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	$nline = 0;
 	$resources = array();
-	while (!FALSE($line = smb_get_line($fds[1], $nline))) {
+	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
 		if (is_array($line)) {
-			smb_proc_close($proc, $fds);
 			return $line[0];
 		}
 		$resources[] = $line;
 	}
-	smb_proc_close($proc, $fds);
 	return $resources;
 }
 
@@ -251,22 +178,21 @@ function smb_ls ($user, $pass, $server, $share, $path)
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, 'ls');
+	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
+	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	$nline = 0;
 	$ret = Array();
-	while (!FALSE($line = smb_get_line($fds[1], $nline))) {
+	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
 		if (is_array($line)) {
-			smb_proc_close($proc, $fds);
 			return $line[0];
 		}
 		if (!FALSE($parsed = smb_parse_file_line($line))) {
 			$ret[] = $parsed;
 		}
 	}
-	smb_proc_close($proc, $fds);
 	return $ret;
 }
 
@@ -276,32 +202,30 @@ function smb_du ($user, $pass, $server, $share)
 
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd('/', 'du');
+	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
+	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	// The 'du' command only gives a global total for the entire share;
 	// the Unix 'du' can do a tally for a subdir, but this one can't.
 	$nline = 0;
-	while (!FALSE($line = smb_get_line($fds[1], $nline))) {
+	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
 		if (is_array($line)) {
-			smb_proc_close($proc, $fds);
 			return $line[0];
 		}
 		if (preg_match('/([0-9]+) blocks of size ([0-9]+)\. ([0-9]+) blocks available/', $line, $matches) === 0) {
 			continue;
 		}
-		smb_proc_close($proc, $fds);
 		return Array(
 			$matches[2] * ($matches[1] - $matches[3]),	// used space (bytes)
 			$matches[2] * $matches[3]			// available space (bytes)
 		);
 	}
-	smb_proc_close($proc, $fds);
 	return FALSE;
 }
 
-function smb_get ($user, $pass, $server, $share, $path, $file, &$proc, &$fds)
+function smb_get ($server, $share, $path, $file, $proc)
 {
 	log_trace("smb_get \"//$server/$share$path/$file\"\n");
 
@@ -313,14 +237,14 @@ function smb_get ($user, $pass, $server, $share, $path, $file, &$proc, &$fds)
 	$scmd = smb_mk_cmd($path, "get \"$file\" /proc/self/fd/5");
 
 	// NB: because we want to return an open file handle, the caller needs
-	// to supply the proc and fds variables. Otherwise the proc and the fds
-	// are local to this function and are garbage collected upon return:
-	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
+	// to supply the Process class. Otherwise the proc and the fds are
+	// local to this function and are garbage collected upon return:
+	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	fclose($fds[1]);
-	fclose($fds[2]);
-	fclose($fds[4]);
+	fclose($proc->fd[1]);
+	fclose($proc->fd[2]);
+	fclose($proc->fd[4]);
 	return STATUS_OK;
 }
 
@@ -334,8 +258,9 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, "put /proc/self/fd/4 \"$file\"");
+	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
+	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	// If an error occurs, the error message will be on stdout before we
@@ -351,21 +276,18 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 		// Append md5summing streamfilter to input stream:
 		stream_filter_register('md5sum', 'md5sum_filter');
 		$md5_filter = stream_filter_append($data, 'md5sum');
-		stream_copy_to_stream($data, $fds[4]);
+		stream_copy_to_stream($data, $proc->fd[4]);
 		stream_filter_remove($md5_filter);
 		$md5 = md5s_get_hash();
 	}
 	else {
-		if (FALSE(fwrite($fds[4], $data))) {
-			smb_proc_close($proc, $fds);
+		if (FALSE(fwrite($proc->fd[4], $data))) {
 			return STATUS_SMBCLIENT_ERROR;
 		}
 		$md5 = md5($data);
 	}
-	fclose($fds[4]);
-	$status = smb_get_status($fds);
-	smb_proc_close($proc, $fds);
-	return $status;
+	fclose($proc->fd[4]);
+	return smb_get_status($proc->fd);
 }
 
 function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
@@ -380,13 +302,12 @@ function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, $cmd);
+	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE(smb_proc_open($user, $pass, $args, $scmd, $proc, $fds))) {
+	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	$status = smb_get_status($fds);
-	smb_proc_close($proc, $fds);
-	return $status;
+	return smb_get_status($proc->fd);
 }
 
 function smb_mk_cmd ($path, $cmd)

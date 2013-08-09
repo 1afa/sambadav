@@ -27,6 +27,7 @@ require_once 'function.smb.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.propflags.php';
+require_once 'class.smbprocess.php';
 
 use Sabre\DAV;
 
@@ -43,8 +44,7 @@ class File extends DAV\FSExt\File
 	private $user;		// Login credentials
 	private $pass;
 
-	private $proc;		// Global storage, so that these objects
-	private $fds;		// don't go out of scope when get() returns
+	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
 	public function __construct ($server, $share, $vpath, $entry, $parent, $user, $pass)
 	{
@@ -84,23 +84,20 @@ class File extends DAV\FSExt\File
 
 	public function get ()
 	{
-		// NB: because we return a file resource, we must ensure that the proc and fds object
-		// stay alive after we leave this function. So we use global class variables to store them.
+		// NB: because we return a file resource, we must ensure that
+		// the proc object stays alive after we leave this function.
+		// So we use a global class variable to store it.
 		// It's not pretty, but it makes real streaming possible.
 		log_trace('get "'.$this->pretty_name()."\"\n");
-		smb_proc_close($this->proc, $this->fds);
-		return $this->_get($this->proc, $this->fds);
-	}
 
-	private function _get (&$proc, &$fds)
-	{
-		// Helper function, do the actual get() with the resource vars passed by caller:
-		switch (smb_get($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $proc, $fds)) {
-			case STATUS_OK: return $fds[5];
-			case STATUS_NOTFOUND: smb_proc_close($proc, $fds); $this->exc_notfound();
-			case STATUS_SMBCLIENT_ERROR: smb_proc_close($proc, $fds); $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: smb_proc_close($proc, $fds); $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden();
+		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
+
+		switch (smb_get($this->server, $this->share, $this->vpath, $this->fname, $this->proc)) {
+			case STATUS_OK: return $this->proc->fd[5];
+			case STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
+			case STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
+			case STATUS_UNAUTHENTICATED: $this->proc = null; $this->exc_unauthenticated();
+			case STATUS_INVALID_NAME: $this->proc = null; $this->exc_forbidden();
 		}
 	}
 
@@ -132,20 +129,19 @@ class File extends DAV\FSExt\File
 		log_trace('getETag "'.$this->pretty_name()."\"\n");
 		// Don't bother if the file is too large:
 		if ($this->fsize > ETAG_SIZE_LIMIT) {
-			return NULL;
+			return null;
 		}
-		// Do not use the global resource vars, but our own private ones:
-		if (!is_resource($this->_get($proc, $fds))) {
-			smb_proc_close($proc, $fds);
-			return NULL;
+		// Create a process in $this->proc, use its read fd:
+		if (!is_resource($fd = $this->get())) {
+			return $this->proc = null;
 		}
 		// Get the eTag by streaming the file and inserting an md5 streamfilter:
 		stream_filter_register('md5sum', 'md5sum_filter');
-		$md5_filter = stream_filter_append($fds[5], 'md5sum');
-		while (fread($fds[5], 5000000));
+		$md5_filter = stream_filter_append($fd, 'md5sum');
+		while (fread($fd, 5000000));
 		stream_filter_remove($md5_filter);
-		smb_proc_close($proc, $fds);
 		$md5 = md5s_get_hash();
+		$this->proc = null;
 		return "\"$md5\"";
 	}
 
