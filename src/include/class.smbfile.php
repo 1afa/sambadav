@@ -23,7 +23,7 @@ namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
-require_once 'function.smb.php';
+require_once 'class.smb.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.propflags.php';
@@ -69,7 +69,7 @@ class File extends DAV\FSExt\File
 	public function setName ($name)
 	{
 		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
-		switch (smb_rename($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $name)) {
+		switch (SMB::rename($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $name)) {
 			case STATUS_OK:
 				$this->invalidate_parent();
 				$this->fname = $name;
@@ -92,7 +92,7 @@ class File extends DAV\FSExt\File
 
 		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
 
-		switch (smb_get($this->server, $this->share, $this->vpath, $this->fname, $this->proc)) {
+		switch (SMB::get($this->server, $this->share, $this->vpath, $this->fname, $this->proc)) {
 			case STATUS_OK: return $this->proc->getOutputStreamHandle();
 			case STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
 			case STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
@@ -104,7 +104,7 @@ class File extends DAV\FSExt\File
 	public function put ($data)
 	{
 		log_trace('put "'.$this->pretty_name()."\"\n");
-		switch (smb_put($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $data, $md5)) {
+		switch (SMB::put($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $data, $md5)) {
 			case STATUS_OK:
 				$this->invalidate_parent();
 				return ($md5 === NULL) ? NULL : "\"$md5\"";
@@ -214,7 +214,7 @@ class File extends DAV\FSExt\File
 		// modeflags necessary to set and unset the proper flags with
 		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
-			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
+			switch (SMB::setMode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
 				case STATUS_OK:
 					$invalidate = true;
 					continue;
@@ -236,7 +236,7 @@ class File extends DAV\FSExt\File
 	public function delete ()
 	{
 		log_trace('delete "'.$this->pretty_name()."\"\n");
-		switch (smb_rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {
+		switch (SMB::rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {
 			case STATUS_OK:
 				$this->invalidate_parent();
 				return true;

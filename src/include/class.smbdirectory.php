@@ -23,7 +23,7 @@ namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
-require_once 'function.smb.php';
+require_once 'class.smb.php';
 require_once 'function.log.php';
 require_once 'class.cache.php';
 require_once 'class.propflags.php';
@@ -147,7 +147,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->server === false || $this->share === false) {
 			$this->exc_forbidden('Cannot create shares in root');
 		}
-		switch (smb_mkdir($this->user, $this->pass, $this->server, $this->share, $this->vpath, $name)) {
+		switch (SMB::mkdir($this->user, $this->pass, $this->server, $this->share, $this->vpath, $name)) {
 			case STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -167,7 +167,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->server === false || $this->share === false) {
 			$this->exc_forbidden('Cannot create files in root');
 		}
-		switch (smb_put($this->user, $this->pass, $this->server, $this->share, $this->vpath, basename($name), $data, $md5)) {
+		switch (SMB::put($this->user, $this->pass, $this->server, $this->share, $this->vpath, basename($name), $data, $md5)) {
 			case STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -221,7 +221,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot rename root folders');
 		}
-		switch (smb_rename($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath), $name)) {
+		switch (SMB::rename($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath), $name)) {
 			case STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -275,7 +275,7 @@ class Directory extends DAV\FSExt\Directory
 			return ($quota = false);
 		}
 		// Get results from disk cache if available and fresh:
-		$quota = Cache::get('smb_du', array($this->user, $this->pass, $this->server, $this->share), $this->user, $this->pass, 20);
+		$quota = Cache::get('\SambaDAV\SMB::du', array($this->user, $this->pass, $this->server, $this->share), $this->user, $this->pass, 20);
 		if (is_array($quota)) {
 			return $quota;
 		}
@@ -294,7 +294,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot delete root folders');
 		}
-		switch (smb_rmdir($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath))) {
+		switch (SMB::rmdir($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath))) {
 			case STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -327,7 +327,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function cache_destroy ()
 	{
-		Cache::destroy('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
+		Cache::destroy('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
 		$this->entries = false;
 	}
 
@@ -365,7 +365,7 @@ class Directory extends DAV\FSExt\Directory
 	private function get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
-		$this->entries = Cache::get('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user, $this->pass, 5);
+		$this->entries = Cache::get('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user, $this->pass, 5);
 		if (is_array($this->entries)) {
 			return;
 		}
@@ -419,7 +419,7 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			// Just the server name given; autodiscover all shares on this server:
-			if (!is_array($shares = Cache::get('smb_get_shares', array($server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
@@ -476,7 +476,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 			// Only our server name given in $share_extra;
 			// this means: autodiscover and use all the shares on this server:
-			if (!is_array($shares = Cache::get('smb_get_shares', array($this->server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
