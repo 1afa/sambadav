@@ -93,7 +93,7 @@ class File extends DAV\FSExt\File
 		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
 
 		switch (smb_get($this->server, $this->share, $this->vpath, $this->fname, $this->proc)) {
-			case STATUS_OK: return $this->proc->fd[5];
+			case STATUS_OK: return $this->proc->getOutputStreamHandle();
 			case STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
 			case STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
 			case STATUS_UNAUTHENTICATED: $this->proc = null; $this->exc_unauthenticated();

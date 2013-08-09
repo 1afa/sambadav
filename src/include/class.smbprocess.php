@@ -82,6 +82,21 @@ class Process
 		return true;
 	}
 
+	public function
+	getStdoutHandle ()
+	{
+		// Return the file handle corresponding to stdout:
+		return $this->fd[1];
+	}
+
+	public function
+	getOutputStreamHandle ()
+	{
+		// Return the file handle corresponding to the program's
+		// write pipe:
+		return $this->fd[5];
+	}
+
 	private function writeAuthFile ($user, $pass)
 	{
 		if (!$this->anonymous) {

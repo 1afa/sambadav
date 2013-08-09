@@ -24,109 +24,9 @@ require_once 'common.inc.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.smbprocess.php';
+require_once 'class.smbparser.php';
 
-function smb_get_line ($fd, &$nline)
-{
-	// Returns false if no more lines;
-	// Returns Array(errorcode) if error found;
-	// Returns the line as a string if all is well.
-
-	if (!is_resource($fd)) {
-		return false;
-	}
-	while (true)
-	{
-		if (($line = fgets($fd)) === false) {
-			return false;
-		}
-		if ($nline++ < 2 && preg_match('/(NT_STATUS_[A-Z0-9_]*)/', $line, $matches) === 1) {
-			switch ($matches[1])
-			{
-				// This is the only status we consider acceptable:
-				case 'NT_STATUS_OK':
-					// Beware strange 'continue' semantics in PHP, in a switch
-					// it's equivalent to 'break'; need two levels to continue loop:
-					continue 2;
-
-				case 'NT_STATUS_LOGON_FAILURE':
-				case 'NT_STATUS_ACCESS_DENIED':	// TODO: this can also mean "not writable"
-					return Array(STATUS_UNAUTHENTICATED);
-
-				case 'NT_STATUS_NO_SUCH_FILE':
-				case 'NT_STATUS_BAD_NETWORK_NAME':
-				case 'NT_STATUS_OBJECT_PATH_NOT_FOUND':
-				case 'NT_STATUS_OBJECT_NAME_NOT_FOUND':
-					return Array(STATUS_NOTFOUND);
-
-				// All other statuses, assume unauthenticated:
-				default:
-					return Array(STATUS_UNAUTHENTICATED);
-			}
-		}
-		return $line;
-	}
-}
-
-function smb_parse_file_line ($line)
-{
-	// Parses a line of smbclient's ls output and returns an array with the following fields:
-	//  0 - filename;
-	//  1 - flags;
-	//  2 - size;
-	//  3 - Unix timestamp.
-
-	// The printf format that smbclient uses to print the file data can be
-	// found in ./source3/client/client.c, line 549 or thereabouts.
-	//
-	// d_printf("  %-30s%7.7s %8.0f  %s",
-	// 		finfo->name,
-	// 		attrib_string(finfo->mode),
-	//		(double)finfo->size,
-	//		time_to_asc(t));
-	//
-	// So the string looks like this:
-	// - two spaces;
-	// - at least 30 characters of space-padded filename;
-	// - exactly 7 characters of flags/spaces;
-	// - a space;
-	// - at least 8 characters of file length;
-	// - two spaces;
-	// - time string.
-	// The time string is its own can of worms, but fairly deterministic-looking.
-	// Match from right to left:
-
-	//                  Name Flags          Size                   Mon            Mar            8         13:00:07  2010
-	if (preg_match("/^  (.*)([A-Za-z ]{7}) ([0-9]{8,}|[0-9 ]{8})  (.*)$/", rtrim($line), $matches) === 0) {
-		return false;
-	}
-	$output = Array(
-		rtrim($matches[1]),	// filename
-		trim($matches[2]),	// flagstring
-		(int)$matches[3]	// filesize (bytes)
-	);
-	// Create Unix timestamp from freeform date string:
-	$date = date_parse($matches[4]);
-
-	$output[] = ($date === false) ? 0 : mktime($date['hour'], $date['minute'], $date['second'], $date['month'], $date['day'], $date['year']);
-
-	return $output;
-}
-
-function smb_get_status ($fd)
-{
-	// Parses the smbclient output on stdout, returns STATUS_OK
-	// if everything could be read without encountering errors
-	// (as parsed by smb_get_line), else it returns the error code.
-	$nline = 0;
-	while (($line = smb_get_line($fd, $nline)) !== false) {
-		if (is_array($line)) {
-			return $line[0];
-		}
-	}
-	return STATUS_OK;
-}
-
-function smb_get_resources ($user, $pass, $server)
+function smb_get_shares ($server, $user, $pass)
 {
 	$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
@@ -134,39 +34,8 @@ function smb_get_resources ($user, $pass, $server)
 	if ($proc->open($args, false) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	$nline = 0;
-	$resources = array();
-	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
-		if (is_array($line)) {
-			return $line[0];
-		}
-		$resources[] = $line;
-	}
-	return $resources;
-}
-
-function smb_get_shares ($server, $user, $pass)
-{
-	// if $resources is not an array, it's an error code:
-	if (!is_array($resources = smb_get_resources($user, $pass, $server))) {
-		return $resources;
-	}
-	$shares = Array();
-	foreach ($resources as $line) {
-		if (strpos($line, 'Disk|') !== 0) {
-			continue;
-		}
-		if (($term = strpos($line, '|', 5)) === false || $term === 5) {
-			continue;
-		}
-		$name = substr($line, 5, $term - 5);
-		// "Special" shares have a name ending with '$', discard those:
-		if (substr($name, -1, 1) === '$') {
-			continue;
-		}
-		$shares[] = $name;
-	}
-	return $shares;
+	$parser = new \SambaDAV\SMBClient\Parser($proc);
+	return $parser->getShares();
 }
 
 function smb_ls ($user, $pass, $server, $share, $path)
@@ -183,17 +52,8 @@ function smb_ls ($user, $pass, $server, $share, $path)
 	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	$nline = 0;
-	$ret = Array();
-	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
-		if (is_array($line)) {
-			return $line[0];
-		}
-		if (($parsed = smb_parse_file_line($line)) !== false) {
-			$ret[] = $parsed;
-		}
-	}
-	return $ret;
+	$parser = new \SambaDAV\SMBClient\Parser($proc);
+	return $parser->getListing();
 }
 
 function smb_du ($user, $pass, $server, $share)
@@ -207,22 +67,8 @@ function smb_du ($user, $pass, $server, $share)
 	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	// The 'du' command only gives a global total for the entire share;
-	// the Unix 'du' can do a tally for a subdir, but this one can't.
-	$nline = 0;
-	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
-		if (is_array($line)) {
-			return $line[0];
-		}
-		if (preg_match('/([0-9]+) blocks of size ([0-9]+)\. ([0-9]+) blocks available/', $line, $matches) === 0) {
-			continue;
-		}
-		return Array(
-			$matches[2] * ($matches[1] - $matches[3]),	// used space (bytes)
-			$matches[2] * $matches[3]			// available space (bytes)
-		);
-	}
-	return false;
+	$parser = new \SambaDAV\SMBClient\Parser($proc);
+	return $parser->getDiskUsage();
 }
 
 function smb_get ($server, $share, $path, $file, $proc)
@@ -287,7 +133,8 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 		$md5 = md5($data);
 	}
 	fclose($proc->fd[4]);
-	return smb_get_status($proc->fd[1]);
+	$parser = new \SambaDAV\SMBClient\Parser($proc);
+	return $parser->getStatus();
 }
 
 function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
@@ -307,7 +154,8 @@ function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
 	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	return smb_get_status($proc->fd[1]);
+	$parser = new \SambaDAV\SMBClient\Parser($proc);
+	return $parser->getStatus();
 }
 
 function smb_mk_cmd ($path, $cmd)
