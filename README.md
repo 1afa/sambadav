@@ -1,3 +1,5 @@
+![SambaDAV](https://raw.github.com/bokxing-it/sambadav/master/img/png/logo.png)
+
 # SambaDAV
 
 SambaDAV is an SMB-to-WebDAV bridge, written in PHP and running as a web
