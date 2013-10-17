@@ -45,11 +45,11 @@ class LDAP
 		if (FALSE(ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3))
 		 || FALSE(@ldap_bind($this->conn, sprintf('uid=%s,ou=Users,%s', $this->escape($user), $this->escape($this->basedn)), $pass))
 		 || FALSE($this->userSearch($user))
-		 || FALSE($this->groupSearch($user, $ldap_groups))
-		 || FALSE($this->userhomeSearch($user, $prop_userhome))) {
+		 || FALSE($this->groupSearch($user, $ldap_groups))) {
 			ldap_close($this->conn);
 			return FALSE;
 		}
+		$this->userhomeSearch($user, $prop_userhome);
 		ldap_close($this->conn);
 		return TRUE;
 	}
