@@ -140,7 +140,7 @@ directory, we'll assume `/tmp` for convenience:
 
 ```sh
 cd /tmp
-tar xvf /path/to/sambadav-0.1.tar.gz
+tar xvf /path/to/sambadav-0.2.tar.gz
 ```
 
 If you look inside the unpacked tarball, you will see three toplevel directories:
@@ -162,7 +162,7 @@ If you look inside the unpacked tarball, you will see three toplevel directories
 Copy everything in `src/` to the webserver folder:
 
 ```sh
-cp -ar /tmp/sambadav-0.1/src /var/www/htdocs/webfolders
+cp -ar /tmp/sambadav-0.2/src /var/www/htdocs/webfolders
 ```
 
 Since SambaDAV is a frontend to [SabreDAV](http://code.google.com/p/sabredav/),
@@ -180,9 +180,9 @@ Apply the patches from the unpacked SambaDAV tarball:
 
 ```sh
 cd /var/www/htdocs/webfolders/lib/SabreDAV
-patch -p0 < /tmp/sambadav-0.1/patch/01-sabredav-1.8.6-better-html-listing.patch
-patch -p0 < /tmp/sambadav-0.1/patch/02-sabredav-1.8.6-sort-filenames.patch
-patch -p0 < /tmp/sambadav-0.1/patch/03-sabredav-1.8.6-actions-table.patch
+patch -p0 < /tmp/sambadav-0.2/patch/01-sabredav-1.8.6-better-html-listing.patch
+patch -p0 < /tmp/sambadav-0.2/patch/02-sabredav-1.8.6-sort-filenames.patch
+patch -p0 < /tmp/sambadav-0.2/patch/03-sabredav-1.8.6-actions-table.patch
 ```
 
 The following directions should be made writable by the user the webserver runs

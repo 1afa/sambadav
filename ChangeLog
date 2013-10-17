@@ -1,3 +1,6 @@
+* Thu Oct 17 2013 Alfred Klomp <alfred@bokxing-it.nl> v0.2
+- Incorporate LDAP-based home directories;
+- Add logo image to file listing;
 - Add logo images;
 - Move LDAP auth logic into separate class;
 - Place Propflags, Directory and File classes in proper \SambaDAV\ namespace;
