@@ -38,7 +38,6 @@ require_once 'class.propflags.php';
 if (!isset($share_root) || !$share_root) $share_root = array();
 if (!isset($share_extra) || !$share_extra) $share_extra = array();
 if (!isset($share_archives) || !$share_archives) $share_archives = array();
-if (!isset($share_userhomes) || !$share_userhomes) $share_userhomes = FALSE;
 
 $share_root = array_merge($share_root, $share_archives);
 
@@ -54,6 +53,8 @@ class Directory extends DAV\FSExt\Directory
 	private $parent = FALSE;
 	private $user = FALSE;		// login credentials
 	private $pass = FALSE;
+	private $userhome_server = FALSE;
+	private $userhome_share = FALSE;
 
 	public function __construct ($server, $share, $path, $parent, $smbflags, $user, $pass)
 	{
@@ -331,6 +332,37 @@ class Directory extends DAV\FSExt\Directory
 		$this->entries = FALSE;
 	}
 
+	public function setUserhome ($url)
+	{
+		$this->userhome_server = FALSE;
+		$this->userhome_share = FALSE;
+
+		// $url must have the form \\server or \\server\share.
+		if (!is_string($url) || strlen($url) < 3 || substr($url, 0, 2) !== '\\\\') {
+			return FALSE;
+		}
+		$url = substr($url, 2);
+
+		// No share, only server:
+		if (FALSE($pos = strpos($url, '\\'))) {
+			$this->userhome_server = $url;
+			return TRUE;
+		}
+		// No server, only share? Error:
+		if ($pos === 0) {
+			return FALSE;
+		}
+		$share = substr($url, $pos + 1);
+
+		// Share has extra slashes?
+		if (!FALSE(strpos($share, '\\'))) {
+			return FALSE;
+		}
+		$this->userhome_server = substr($url, 0, $pos);
+		$this->userhome_share = $share;
+		return TRUE;
+	}
+
 	private function get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
@@ -369,8 +401,7 @@ class Directory extends DAV\FSExt\Directory
 	private function global_root_entries ()
 	{
 		global $share_root;
-                global $share_extra;
-		global $share_userhomes;
+		global $share_extra;
 
 		// structure:
 		// $entries = array('name-of-root-folder' => array('server', 'share-on-that-server'))
@@ -408,8 +439,13 @@ class Directory extends DAV\FSExt\Directory
 		}
 		// The user's home directory gets a folder with the name of the *user*:
 		// User can be FALSE if we allow anonymous logins, in which case ignore:
-		if (!FALSE($this->user) && $share_userhomes) {
-			$entries[$this->user] = array($share_userhomes, $this->user);
+		if (!FALSE($this->user) && !FALSE($this->userhome_server)) {
+			if (FALSE($this->userhome_share)) {
+				$entries[$this->user] = array($this->userhome_server, $this->user);
+			}
+			else {
+				$entries[$this->userhome_share] = array($this->userhome_server, $this->userhome_share);
+			}
 		}
 		return $entries;
 	}
@@ -418,7 +454,6 @@ class Directory extends DAV\FSExt\Directory
 	{
 		global $share_root;
 		global $share_extra;
-		global $share_userhomes;
 
 		$entries = array();
 
@@ -456,8 +491,13 @@ class Directory extends DAV\FSExt\Directory
 			}
 		}
 		// User's home share is on this server?
-		if (!FALSE($this->user) && $share_userhomes && $share_userhomes == $this->server) {
-			$entries[$this->user] = 1;
+		if (!FALSE($this->user) && $this->userhome_server && $this->userhome_server == $this->server) {
+			if (FALSE($this->userhome_share)) {
+				$entries[$this->user] = 1;
+			}
+			else {
+				$entries[$this->userhome_share] = 1;
+			}
 		}
 		return array_keys($entries);
 	}

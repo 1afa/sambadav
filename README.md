@@ -474,6 +474,7 @@ The third file, `share_userhomes.inc.php`, looks slightly different:
 <?php
 $enable_webfolders = TRUE;
 $share_userhomes = 'server7';
+$share_userhome_ldap = FALSE;
 ```
 
 `$enable_webfolders` is the "master switch" for the whole SambaDAV suite. If
@@ -488,6 +489,14 @@ is FALSE, no userhome lookup is done. However, if it's set to the name of a
 server, then the share `//server/username` is added, where `username` is the
 name of the logged-in user. This userhome will appear in the SambaDAV root as
 a folder with the name of the logged-in user.
+
+`$share_userhome_ldap` can be set to the name of a LDAP property containing the
+URL for the user's home share. The value of this property must be of the form
+`\\server` (which is interpreted as `\\server\username` for the currently
+logged-in user), or `\\server\share`. For instance, if all your LDAP users have
+a property called `sambaHomePath`, then its value will be used for the home
+share. This setting overrides `$share_userhomes`, and only works with LDAP
+authentication.
 
 Further customization of the shares listing can be done by configuring Samba to
 produce the required list of shares. SambaDAV is kept simple on purpose.

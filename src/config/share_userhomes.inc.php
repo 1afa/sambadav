@@ -11,3 +11,12 @@ $enable_webfolders = TRUE;
 // $share_userhomes to the string 'JUPITER' and logging in with user 'john'
 // will auto-add the share 'john' on 'JUPITER' to the list of shares.
 $share_userhomes = FALSE;
+
+// If this variable is set to the name of a LDAP property, then that property
+// will be queried for the location of the user's home. Example: if every user
+// has an LDAP property called 'sambaHomePath', then by setting the variable
+// below to 'sambaHomePath', SambaDAV will read the value of that property and
+// use it as the home directory. Currently, the value in LDAP must look like:
+//   \\servername            (will be expanded to \\servername\username)
+//   \\servername\sharename
+$share_userhome_ldap = FALSE;

@@ -83,7 +83,10 @@ else {
 		if (LDAP_AUTH) {
 			$ldap = new \SambaDAV\LDAP();
 
-			if (FALSE($ldap->verify($user, $pass, $ldap_groups))) {
+			if (!isset($share_userhome_ldap)) {
+				$share_userhome_ldap = FALSE;
+			}
+			if (FALSE($ldap->verify($user, $pass, $ldap_groups, $share_userhome_ldap))) {
 				sleep(2);
 				$auth->requireLogin();
 				die('Authentication required');
@@ -100,6 +103,14 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 // No server, share and path known in root dir:
 $rootDir = new \SambaDAV\Directory(FALSE, FALSE, FALSE, FALSE, 'D', $user, $pass);
 
+// Pass LDAP userhome dir if available:
+if (isset($ldap) && !FALSE($ldap->userhome)) {
+	$rootDir->setUserhome($ldap->userhome);
+}
+// Otherwise the userhome server if defined:
+else if (!FALSE($user) && isset($share_userhomes) && $share_userhomes) {
+	$rootDir->setUserhome(sprintf('\\\\%s\%s', $share_userhomes, $user));
+}
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);
 

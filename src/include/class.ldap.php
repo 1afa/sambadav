@@ -28,8 +28,9 @@ class LDAP
 	private $conn = FALSE;
 	private $host = FALSE;
 	private $basedn = FALSE;
+	public $userhome = FALSE;
 
-	public function verify ($user, $pass, $ldap_groups = FALSE)
+	public function verify ($user, $pass, $ldap_groups = FALSE, $prop_userhome = FALSE)
 	{
 		if (FALSE($user) || $user === ''
 		 || FALSE($pass) || $pass === '') {
@@ -44,7 +45,8 @@ class LDAP
 		if (FALSE(ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3))
 		 || FALSE(@ldap_bind($this->conn, sprintf('uid=%s,ou=Users,%s', $this->escape($user), $this->escape($this->basedn)), $pass))
 		 || FALSE($this->userSearch($user))
-		 || FALSE($this->groupSearch($user, $ldap_groups))) {
+		 || FALSE($this->groupSearch($user, $ldap_groups))
+		 || FALSE($this->userhomeSearch($user, $prop_userhome))) {
 			ldap_close($this->conn);
 			return FALSE;
 		}
@@ -98,6 +100,28 @@ class LDAP
 
 		return (!FALSE($result = ldap_search($this->conn, $searchdn, $filter, array('memberUid'), 1))
 		     && !FALSE(ldap_first_entry($this->conn, $result)));
+	}
+
+	private function userhomeSearch ($user, $prop_userhome)
+	{
+		if (FALSE($prop_userhome)) {
+			return TRUE;
+		}
+		// If $prop_userhome is set, try to find the given property;
+		// e..g. if $prop_userhome is 'sambaHomePath', search for that entry:
+		$searchdn = sprintf('ou=Users,%s', $this->escape($this->basedn));
+		$filter = sprintf('(&(objectclass=posixAccount)(uid=%s))', $this->escape($user));
+
+		if (FALSE($result = ldap_search($this->conn, $searchdn, $filter, array($this->escape($prop_userhome)), 0))
+		 || FALSE($entry = ldap_first_entry($this->conn, $result))
+		 || FALSE($value = ldap_get_values($this->conn, $entry, $this->escape($prop_userhome)))) {
+			return FALSE;
+		}
+		if (!isset($value['count']) || $value['count'] == 0 || !isset($value[0]) || $value[0] === '') {
+			return FALSE;
+		}
+		$this->userhome = $value[0];
+		return TRUE;
 	}
 
 	private function groupCNs ($groups)
