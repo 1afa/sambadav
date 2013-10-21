@@ -112,13 +112,13 @@ function smb_parse_file_line ($line)
 	return $output;
 }
 
-function smb_get_status ($fds)
+function smb_get_status ($fd)
 {
 	// Parses the smbclient output on stdout, returns STATUS_OK
 	// if everything could be read without encountering errors
 	// (as parsed by smb_get_line), else it returns the error code.
 	$nline = 0;
-	while (!FALSE($line = smb_get_line($fds[1], $nline))) {
+	while (!FALSE($line = smb_get_line($fd, $nline))) {
 		if (is_array($line)) {
 			return $line[0];
 		}
@@ -287,7 +287,7 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 		$md5 = md5($data);
 	}
 	fclose($proc->fd[4]);
-	return smb_get_status($proc->fd);
+	return smb_get_status($proc->fd[1]);
 }
 
 function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
@@ -307,7 +307,7 @@ function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
 	if (FALSE($proc->open($args, $scmd))) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
-	return smb_get_status($proc->fd);
+	return smb_get_status($proc->fd[1]);
 }
 
 function smb_mk_cmd ($path, $cmd)

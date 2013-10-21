@@ -309,7 +309,6 @@ class Directory extends DAV\FSExt\Directory
 
 	public function updateProperties ($mutations)
 	{
-
 		// Stub function, see \SambaDAV\File::updateProperties() for
 		// more details.
 		// By default, Sabre wants to save these properties in a file
