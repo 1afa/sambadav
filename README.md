@@ -6,12 +6,12 @@ SambaDAV is an SMB-to-WebDAV bridge, written in PHP and running as a web
 application on Linux servers. It acts as the glue between Windows Samba/CIFS
 filesharing and WebDAV internet file access, to provide:
 
-- secure, worldwide access to your shares and files through any web browser:
-  upload and download files over nothing more than standard HTTPS without the
-  need to setup a VPN;
+- Secure, worldwide access to your shares and files through any web browser.
+  Upload and download files over nothing more than standard HTTPS without the
+  need to setup a VPN.
 
-- access to your remote shares directly on your computer as network drives:
-  open and edit your files and shares as if they were on a local network drive,
+- Access to your remote shares directly on your computer as network drives.
+  Open and edit your files and shares as if they were on a local network drive,
   from any location and with any device that supports WebDAV.
 
 SambaDAV provides the advantages of the cloud (access to your files from
@@ -70,32 +70,32 @@ This may seem like a bit of a hack, but it's actually remarkably reliable,
 resilient and performant for what it is. Some features:
 
 - File uploading/downloading is all fully streaming through the use of PHP
-  streams and Unix pipes; no temporary files are created on the server; in
+  streams and Unix pipes. No temporary files are created on the server. In
   practice you can read and write gigabyte-sized files at many tens of
-  megabytes per second;
+  megabytes per second.
 
-- Supports UTF-8 filenames;
+- Supports UTF-8 filenames.
 
-- Supports read-only and hidden attribute flags;
+- Supports read-only and hidden attribute flags.
 
 - Supports Windows XP (but you'll need a valid SSL certificate and some
-  registry hacks, see elsewhere);
+  registry hacks, see elsewhere).
 
 - Robust decoding of the `smbclient` output (as buttoned-down and mistrusting
-  as possible, using hints derived from the `smbclient` source code);
+  as possible, using hints derived from the `smbclient` source code).
 
 - Caches lookups and responses in memory (using a filesystem-based cache in
   /dev/shm, shared memory) and properly invalidates the cache when a resource
-  changes;
+  changes.
 
-- Supports multiple servers, multiple shares, dynamic userhomes based on the
-  username;
+- Supports multiple servers, multiple shares, and dynamic userhomes based on
+  the username or the value of an LDAP property.
 
-- Supports anonymous (guest) logins if you enable it;
+- Supports anonymous (guest) logins if you enable it.
 
 - Passes the username and password to `smbclient` through an unnamed pipe (an
-  anonymous file descriptor), which makes the data fairly hard to intercept
-  (and invisible in the process table);
+  anonymous file descriptor), which makes this sensitive data fairly hard to
+  intercept (and invisible in the process table).
 
 - Supports group-based LDAP authentication as an cheap extra authentication
   check before making expensive calls to `smbclient`.
@@ -107,7 +107,7 @@ SambaDAV was written by [Bokxing IT BV](http://www.bokxing-it.nl), Delft, the
 Netherlands, to supplement a line of small business servers. We are releasing
 it because we believe that this software is useful and fills a need, and to
 give something back to the open-source community. There are other projects that
-do something offer similar, such as
+offer something similar, such as
 [Davenport](http://davenport.sourceforge.net) and smbwebclient.php, but we
 wrote SambaDAV because those projects show their age and did not fit our needs.
 
@@ -581,8 +581,8 @@ running:
 - Windows XP needs a valid certificate. If the Network Drive mapper is not
   working, try surfing to the webfolders URL with Internet Explorer and see if
   you get a certificate error. Internet Explorer uses the same networking code
-  as the builtin Webfolders client, and any the errors you get in Internet
-  Explorer will tell you what's going wrong in the Webfolders client.
+  as the builtin Webfolders client, and any errors you get in Internet Explorer
+  will tell you what's going wrong in the Webfolders client.
 
 - Windows XP does not support SSL connection syntax, or connecting to anything
   other than the root of a domain, but it does properly redirect to an SSL
