@@ -82,7 +82,7 @@ class Process
 		return true;
 	}
 
-	public function writeAuthFile ($user, $pass)
+	private function writeAuthFile ($user, $pass)
 	{
 		if (!$this->anonymous) {
 			$creds = ($pass === false)
@@ -98,7 +98,7 @@ class Process
 		return true;
 	}
 
-	public function writeCommand ($smbcmd)
+	private function writeCommand ($smbcmd)
 	{
 		if ($smbcmd !== false) {
 			if (fwrite($this->fd[0], $smbcmd) === false) {
