@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" height="47" width="49" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<rect x="0" y="0" height="5" width="49" style="fill:#e8e8e8" id="bkgd"/>
+		<rect x="0" y="2" height="1" width="1" style="fill:#c4c4cb" id="block1"/>
+		<rect x="0" y="1.5" height="2" width="2" style="fill:#c4c4cb" id="block2"/>
+		<rect x="0" y="1" height="3" width="3" style="fill:#c4c4cb" id="block3"/>
+		<rect x="0" y="0.5" height="4" width="4" style="fill:#c4c4cb" id="block4"/>
+		<rect x="0" y="0" height="5" width="5" style="fill:#c4c4cb" id="block5"/>
+	</defs>
+	<g id="frame1">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block2" x="1"/>
+		<use xlink:href="#block1" x="7"/>
+		<use xlink:href="#block2" x="13"/>
+		<use xlink:href="#block3" x="19"/>
+		<use xlink:href="#block4" x="25"/>
+		<use xlink:href="#block5" x="31"/>
+		<use xlink:href="#block4" x="37"/>
+		<use xlink:href="#block3" x="43"/>
+	</g>
+	<g id="frame2" transform="translate(0,6)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block3" x="1"/>
+		<use xlink:href="#block2" x="7"/>
+		<use xlink:href="#block1" x="13"/>
+		<use xlink:href="#block2" x="19"/>
+		<use xlink:href="#block3" x="25"/>
+		<use xlink:href="#block4" x="31"/>
+		<use xlink:href="#block5" x="37"/>
+		<use xlink:href="#block4" x="43"/>
+	</g>
+	<g id="frame3" transform="translate(0,12)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block4" x="1"/>
+		<use xlink:href="#block3" x="7"/>
+		<use xlink:href="#block2" x="13"/>
+		<use xlink:href="#block1" x="19"/>
+		<use xlink:href="#block2" x="25"/>
+		<use xlink:href="#block3" x="31"/>
+		<use xlink:href="#block4" x="37"/>
+		<use xlink:href="#block5" x="43"/>
+	</g>
+	<g id="frame4" transform="translate(0,18)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block5" x="1"/>
+		<use xlink:href="#block4" x="7"/>
+		<use xlink:href="#block3" x="13"/>
+		<use xlink:href="#block2" x="19"/>
+		<use xlink:href="#block1" x="25"/>
+		<use xlink:href="#block2" x="31"/>
+		<use xlink:href="#block3" x="37"/>
+		<use xlink:href="#block4" x="43"/>
+	</g>
+	<g id="frame5" transform="translate(0,24)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block4" x="1"/>
+		<use xlink:href="#block5" x="7"/>
+		<use xlink:href="#block4" x="13"/>
+		<use xlink:href="#block3" x="19"/>
+		<use xlink:href="#block2" x="25"/>
+		<use xlink:href="#block1" x="31"/>
+		<use xlink:href="#block2" x="37"/>
+		<use xlink:href="#block3" x="43"/>
+	</g>
+	<g id="frame6" transform="translate(0,30)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block3" x="1"/>
+		<use xlink:href="#block4" x="7"/>
+		<use xlink:href="#block5" x="13"/>
+		<use xlink:href="#block4" x="19"/>
+		<use xlink:href="#block3" x="25"/>
+		<use xlink:href="#block2" x="31"/>
+		<use xlink:href="#block1" x="37"/>
+		<use xlink:href="#block2" x="43"/>
+	</g>
+	<g id="frame7" transform="translate(0,36)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block2" x="1"/>
+		<use xlink:href="#block3" x="7"/>
+		<use xlink:href="#block4" x="13"/>
+		<use xlink:href="#block5" x="19"/>
+		<use xlink:href="#block4" x="25"/>
+		<use xlink:href="#block3" x="31"/>
+		<use xlink:href="#block2" x="37"/>
+		<use xlink:href="#block1" x="43"/>
+	</g>
+	<g id="frame8" transform="translate(0,42)">
+		<use xlink:href="#bkgd"/>
+		<use xlink:href="#block1" x="1"/>
+		<use xlink:href="#block2" x="7"/>
+		<use xlink:href="#block3" x="13"/>
+		<use xlink:href="#block4" x="19"/>
+		<use xlink:href="#block5" x="25"/>
+		<use xlink:href="#block4" x="31"/>
+		<use xlink:href="#block3" x="37"/>
+		<use xlink:href="#block2" x="43"/>
+	</g>
+</svg>
