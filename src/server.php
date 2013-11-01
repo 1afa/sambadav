@@ -39,6 +39,7 @@ require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
 require_once 'include/function.cache.php';
 require_once 'include/plugin.msproperties.php';
+require_once 'include/function.loginform.php';
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:
@@ -55,6 +56,21 @@ else {
 	$auth = new HTTP\BasicAuth();
 	$auth->setRealm('Web Folders');
 
+	// If no basic auth creds set, but the variables "user" and "pass" were
+	// posted to the page (e.g. from a/the login form), substitute those:
+	if (!isset($_SERVER['PHP_AUTH_USER']) && !isset($_SERVER['PHP_AUTH_PW'])) {
+		if (isset($_POST) && isset($_POST['user']) && isset($_POST['pass'])) {
+			$_SERVER['PHP_AUTH_USER'] = $_POST['user'];
+			$_SERVER['PHP_AUTH_PW'] = $_POST['pass'];
+
+			// HACK: dynamically change the request method to GET, because
+			// otherwise SambaDAV will throw an exception because there is
+			// no POST handler installed. This change causes SabreDAV to
+			// process this request just like any other basic auth login:
+			$_SERVER['REQUEST_METHOD'] = 'GET';
+		}
+	}
+
 	list($user, $pass) = $auth->getUserPass();
 	$user = ($user === NULL || $user === FALSE || $user === '') ? FALSE : $user;
 	$pass = ($pass === NULL || $pass === FALSE || $pass === '') ? FALSE : $pass;
@@ -68,7 +84,8 @@ else {
 	// to make the browser flush its cache:
 	if (isset($_GET['logout']) || (FALSE(ANONYMOUS_ALLOW) && (FALSE($user) || FALSE($pass)))) {
 		$auth->requireLogin();
-		die('Authentication required');
+		print_login_form($baseuri);
+		return;
 	}
 	// If we allow anonymous logins, and we did not get all creds, skip authorization:
 	if (ANONYMOUS_ALLOW && (FALSE($user) || FALSE($pass)))
@@ -93,7 +110,8 @@ else {
 			if (FALSE($ldap->verify($user, $pass, $ldap_groups, $share_userhome_ldap))) {
 				sleep(2);
 				$auth->requireLogin();
-				die('Authentication required');
+				print_login_form($baseuri);
+				return;
 			}
 		}
 	}

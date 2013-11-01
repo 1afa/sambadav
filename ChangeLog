@@ -1,3 +1,6 @@
+- Print a simple login form when basic authentication fails; this login form
+  uses JavaScript to load the credentials into the browser's authentication
+  cache, thereby hopefully keeping the user logged in.
 - Add spinner animation for later use;
 - No longer fail to login a user when the userhome LDAP attribute is not found,
   but steam on without setting a user dir. (Less fragile/surprising behaviour.)
