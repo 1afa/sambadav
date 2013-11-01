@@ -40,6 +40,10 @@ require_once 'include/class.smbfile.php';
 require_once 'include/function.cache.php';
 require_once 'include/plugin.msproperties.php';
 
+// The base URI is the SambaDAV root dir location on the server.
+// Check if the request was rewritten:
+$baseuri = (strpos($_SERVER['REQUEST_URI'], SERVER_BASEDIR) === 0) ? SERVER_BASEDIR : '/';
+
 // If ANONYMOUS_ONLY is set to TRUE in the config, don't require credentials;
 // also the 'logout' action makes no sense for an anonymous server:
 if (ANONYMOUS_ONLY)
@@ -57,8 +61,8 @@ else {
 
 	// If you're tagged with 'logout' but you're not passing a username/pass, redirect to plain index:
 	if (isset($_GET['logout']) && (FALSE($user) || FALSE($pass))) {
-		header('Location: '.((strpos($_SERVER['REQUEST_URI'], SERVER_BASEDIR) === 0) ? SERVER_BASEDIR : '/'));
-		die();
+		header("Location: $baseuri");
+		return;
 	}
 	// Otherwise, if you're tagged with 'logout', make sure the authentication is refused,
 	// to make the browser flush its cache:
@@ -115,7 +119,7 @@ else if (!FALSE($user) && isset($share_userhomes) && $share_userhomes) {
 $server = new DAV\Server($rootDir);
 
 // We're required to set the base uri. Check if the request was rewritten:
-$server->setBaseUri((strpos($_SERVER['REQUEST_URI'], SERVER_BASEDIR) === 0) ? SERVER_BASEDIR : '/');
+$server->setBaseUri($baseuri);
 
 // Also make sure there is a 'data' directory, writable by the server. This directory is used to store information about locks
 $lockBackend = new DAV\Locks\Backend\File('data/locks.dat');
