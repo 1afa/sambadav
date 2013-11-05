@@ -112,9 +112,11 @@ class Process
 
 	public function __destruct ()
 	{
-		for ($i = 0; $i < 6; $i++) {
-			if (isset($this->fd[$i]) && is_resource($this->fd[$i])) {
-				fclose($this->fd[$i]);
+		if (is_array($this->fd)) {
+			foreach ($this->fd as $fd) {
+				if (is_resource($fd)) {
+					fclose($fd);
+				}
 			}
 		}
 		if (is_resource($this->proc)) {
