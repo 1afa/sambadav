@@ -25,60 +25,71 @@ require_once 'common.inc.php';
 
 class LDAP
 {
-	private $conn = FALSE;
-	private $host = FALSE;
-	private $basedn = FALSE;
-	public $userhome = FALSE;
+	private $conn = false;
+	private $host = false;
+	private $basedn = false;
+	public $userhome = false;
 
-	public function verify ($user, $pass, $ldap_groups = FALSE, $prop_userhome = FALSE)
+	public function verify ($user, $pass, $ldap_groups = false, $prop_userhome = false)
 	{
-		if (FALSE($user) || $user === ''
-		 || FALSE($pass) || $pass === '') {
-			return FALSE;
+		if ($user === false || $user === ''
+		 || $pass === false || $pass === '') {
+			return false;
 		}
-		if (FALSE($this->getParams())
-		 || FALSE($this->conn = ldap_connect($this->host))) {
-			return FALSE;
+		if ($this->getParams() === false) {
+			return false;
+		}
+		if (($this->conn = ldap_connect($this->host)) === false) {
+			return false;
 		}
 		// Suppress errors with the @ prefix because a bind error is *expected*
 		// in case of a failed login; no need to pollute the error log:
-		if (FALSE(ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3))
-		 || FALSE(@ldap_bind($this->conn, sprintf('uid=%s,ou=Users,%s', $this->escape($user), $this->escape($this->basedn)), $pass))
-		 || FALSE($this->userSearch($user))
-		 || FALSE($this->groupSearch($user, $ldap_groups))) {
+		if (ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3) === false) {
 			ldap_close($this->conn);
-			return FALSE;
+			return false;
+		}
+		if (@ldap_bind($this->conn, sprintf('uid=%s,ou=Users,%s', $this->escape($user), $this->escape($this->basedn)), $pass) === false) {
+			ldap_close($this->conn);
+			return false;
+		}
+		if ($this->userSearch($user) === false) {
+			ldap_close($this->conn);
+			return false;
+		}
+		if ($this->groupSearch($user, $ldap_groups) === false) {
+			ldap_close($this->conn);
+			return false;
 		}
 		$this->userhomeSearch($user, $prop_userhome);
 		ldap_close($this->conn);
-		return TRUE;
+		return true;
 	}
 
 	private function getParams ()
 	{
-		if (!FALSE($this->host) && !FALSE($this->basedn)) {
-			return TRUE;
+		if ($this->host !== false && $this->basedn !== false) {
+			return true;
 		}
-		if (FALSE($fp = fopen('/etc/ldap.conf', 'r'))) {
-			return FALSE;
+		if (($fp = fopen('/etc/ldap.conf', 'r')) === false) {
+			return false;
 		}
-		while (!FALSE($line = fgets($fp))) {
-			if (FALSE($this->host)) {
+		while (($line = fgets($fp)) !== false) {
+			if ($this->host === false) {
 				if (preg_match('/^[Hh][Oo][Ss][Tt]\s+(\S*)\s*$/', $line, $matches) && isset($matches[1])) {
 					$this->host = $matches[1];
 				}
 			}
-			if (FALSE($this->basedn)) {
+			if ($this->basedn === false) {
 				if (preg_match('/^[Bb][Aa][Ss][Ee]\s+(\S*)\s*$/', $line, $matches) && isset($matches[1])) {
 					$this->basedn = $matches[1];
 				}
 			}
-			if (!FALSE($this->host) && !FALSE($this->basedn)) {
+			if ($this->host !== false && $this->basedn !== false) {
 				break;
 			}
 		}
 		fclose($fp);
-		return (!FALSE($this->host) && !FALSE($this->basedn));
+		return ($this->host !== false && $this->basedn !== false);
 	}
 
 	private function userSearch ($user)
@@ -86,42 +97,50 @@ class LDAP
 		$searchdn = sprintf('ou=Users,%s', $this->escape($this->basedn));
 		$filter = sprintf('(&(objectclass=posixAccount)(uid=%s))', $this->escape($user));
 
-		return (!FALSE($result = ldap_search($this->conn, $searchdn, $filter, array('uid'), 1))
-		     && !FALSE(ldap_first_entry($this->conn, $result)));
+		if (($result = ldap_search($this->conn, $searchdn, $filter, array('uid'), 1)) === false) {
+			return false;
+		}
+		return (ldap_first_entry($this->conn, $result) !== false);
 	}
 
 	private function groupSearch ($user, $groups)
 	{
-		if (FALSE($groups)) {
-			return TRUE;
+		if ($groups === false) {
+			return true;
 		}
 		$searchdn = sprintf('ou=Groups,%s', $this->escape($this->basedn));
 		$filter = sprintf('(&(memberUid=%s)(objectclass=posixGroup)%s)', $this->escape($user), $this->groupCNs($groups));
 
-		return (!FALSE($result = ldap_search($this->conn, $searchdn, $filter, array('memberUid'), 1))
-		     && !FALSE(ldap_first_entry($this->conn, $result)));
+		if (($result = ldap_search($this->conn, $searchdn, $filter, array('memberUid'), 1)) === false) {
+			return false;
+		}
+		return (ldap_first_entry($this->conn, $result) !== false);
 	}
 
 	private function userhomeSearch ($user, $prop_userhome)
 	{
-		if (FALSE($prop_userhome)) {
-			return TRUE;
+		if ($prop_userhome === false) {
+			return true;
 		}
 		// If $prop_userhome is set, try to find the given property;
 		// e..g. if $prop_userhome is 'sambaHomePath', search for that entry:
 		$searchdn = sprintf('ou=Users,%s', $this->escape($this->basedn));
 		$filter = sprintf('(&(objectclass=posixAccount)(uid=%s))', $this->escape($user));
 
-		if (FALSE($result = ldap_search($this->conn, $searchdn, $filter, array($this->escape($prop_userhome)), 0))
-		 || FALSE($entry = ldap_first_entry($this->conn, $result))
-		 || FALSE($value = ldap_get_values($this->conn, $entry, $this->escape($prop_userhome)))) {
-			return FALSE;
+		if (($result = ldap_search($this->conn, $searchdn, $filter, array($this->escape($prop_userhome)), 0)) === false) {
+			return false;
+		}
+		if (($entry = ldap_first_entry($this->conn, $result)) === false) {
+			return false;
+		}
+		if (($value = ldap_get_values($this->conn, $entry, $this->escape($prop_userhome))) === false) {
+			return false;
 		}
 		if (!isset($value['count']) || $value['count'] == 0 || !isset($value[0]) || $value[0] === '') {
-			return FALSE;
+			return false;
 		}
 		$this->userhome = $value[0];
-		return TRUE;
+		return true;
 	}
 
 	private function groupCNs ($groups)

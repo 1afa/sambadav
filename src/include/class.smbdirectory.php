@@ -45,16 +45,16 @@ use Sabre\DAV;
 
 class Directory extends DAV\FSExt\Directory
 {
-	private $server = FALSE;	// server that the share is on
-	private $share = FALSE;		// name of the share
-	private $vpath = FALSE;		// virtual path from root of share
-	private $entries = FALSE;
-	private $flags = FALSE;		// SMB flags
-	private $parent = FALSE;
-	private $user = FALSE;		// login credentials
-	private $pass = FALSE;
-	private $userhome_server = FALSE;
-	private $userhome_share = FALSE;
+	private $server = false;	// server that the share is on
+	private $share = false;		// name of the share
+	private $vpath = false;		// virtual path from root of share
+	private $entries = false;
+	private $flags = false;		// SMB flags
+	private $parent = false;
+	private $user = false;		// login credentials
+	private $pass = false;
+	private $userhome_server = false;
+	private $userhome_share = false;
 
 	public function __construct ($server, $share, $path, $parent, $smbflags, $user, $pass)
 	{
@@ -63,7 +63,7 @@ class Directory extends DAV\FSExt\Directory
 		$this->server = $server;
 		$this->share = $share;
 		$this->flags = new \SambaDAV\Propflags($smbflags);
-		$this->vpath = FALSE($path) ? '/' : $path;
+		$this->vpath = ($path === false) ? '/' : $path;
 		$this->parent = $parent;
 	}
 
@@ -72,21 +72,21 @@ class Directory extends DAV\FSExt\Directory
 		$children = array();
 
 		// If in root folder, show master shares list:
-		if (FALSE($this->server)) {
+		if ($this->server === false) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new \SambaDAV\Directory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
+				$children[] = new \SambaDAV\Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
 		// If in root folder for given server, fetch all allowed shares for that server:
-		if (FALSE($this->share)) {
+		if ($this->share === false) {
 			foreach ($this->server_root_entries() as $entry) {
-				$children[] = new \SambaDAV\Directory($this->server, $entry, FALSE, $this, 'D', $this->user, $this->pass);
+				$children[] = new \SambaDAV\Directory($this->server, $entry, false, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
 		// Else, open share, produce listing:
-		if (FALSE($this->entries)) {
+		if ($this->entries === false) {
 			$this->get_entries();
 		}
 		foreach ($this->entries as $entry) {
@@ -103,40 +103,40 @@ class Directory extends DAV\FSExt\Directory
 		log_trace('getChild "'.$this->pretty_name()."$name\"\n");
 
 		// Are we a folder in the root dir?
-		if (FALSE($this->server)) {
+		if ($this->server === false) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new \SambaDAV\Directory($entry[0], $entry[1], FALSE, $this, 'D', $this->user, $this->pass);
+					return new \SambaDAV\Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
 				}
 			}
 			$this->exc_notfound($name);
-			return FALSE;
+			return false;
 		}
 		// We have a server, but do we have a share?
-		if (FALSE($this->share)) {
+		if ($this->share === false) {
 			if (in_array($name, $this->server_root_entries())) {
-				return new \SambaDAV\Directory($this->server, $name, FALSE, $this, 'D', $this->user, $this->pass);
+				return new \SambaDAV\Directory($this->server, $name, false, $this, 'D', $this->user, $this->pass);
 			}
 			$this->exc_notfound($name);
-			return FALSE;
+			return false;
 		}
 		// We have a server and a share, get entries:
-		if (FALSE($this->entries)) {
+		if ($this->entries === false) {
 			$this->get_entries();
 		}
-		if (!FALSE($this->entries)) {
+		if ($this->entries !== false) {
 			foreach ($this->entries as $entry) {
 				if ($entry[0] !== $name) {
 					continue;
 				}
-				if (FALSE(strpos($entry[1], 'D'))) {
+				if (strpos($entry[1], 'D') === false) {
 					return new \SambaDAV\File($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
 				}
 				return new \SambaDAV\Directory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
 			}
 		}
 		$this->exc_notfound($this->pretty_name().$name);
-		return FALSE;
+		return false;
 	}
 
 	public function createDirectory ($name)
@@ -144,14 +144,14 @@ class Directory extends DAV\FSExt\Directory
 		log_trace('createDirectory "'.$this->pretty_name()."$name\"\n");
 
 		// Cannot create directories in the root:
-		if (FALSE($this->server) || FALSE($this->share)) {
+		if ($this->server === false || $this->share === false) {
 			$this->exc_forbidden('Cannot create shares in root');
 		}
 		switch (smb_mkdir($this->user, $this->pass, $this->server, $this->share, $this->vpath, $name)) {
 			case STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
-				return TRUE;
+				return true;
 
 			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -164,7 +164,7 @@ class Directory extends DAV\FSExt\Directory
 	{
 		log_trace('createFile "'.$this->pretty_name()."$name\"\n");
 
-		if (FALSE($this->server) || FALSE($this->share)) {
+		if ($this->server === false || $this->share === false) {
 			$this->exc_forbidden('Cannot create files in root');
 		}
 		switch (smb_put($this->user, $this->pass, $this->server, $this->share, $this->vpath, basename($name), $data, $md5)) {
@@ -183,34 +183,34 @@ class Directory extends DAV\FSExt\Directory
 	public function childExists ($name)
 	{
 		// Are we the global root?
-		if (FALSE($this->server)) {
+		if ($this->server === false) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return TRUE;
+					return true;
 				}
 			}
-			return FALSE;
+			return false;
 		}
 		// Are we a server root?
-		if (FALSE($this->share)) {
+		if ($this->share === false) {
 			return (in_array($name, $this->server_root_entries()));
 		}
-		if (FALSE($this->entries)) {
+		if ($this->entries === false) {
 			$this->get_entries();
 		}
 		foreach ($this->entries as $entry) {
 			if ($name === $entry[0]) {
-				return TRUE;
+				return true;
 			}
 		}
-		return FALSE;
+		return false;
 	}
 
 	public function getName ()
 	{
-		if (FALSE($this->server)) return '/';
-		if (FALSE($this->share)) return $this->server;
-		if (FALSE($this->vpath) || $this->vpath === '/') return $this->share;
+		if ($this->server === false) return '/';
+		if ($this->share === false) return $this->server;
+		if ($this->vpath === false || $this->vpath === '/') return $this->share;
 		return basename($this->vpath);
 	}
 
@@ -218,7 +218,7 @@ class Directory extends DAV\FSExt\Directory
 	{
 		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 
-		if (FALSE($this->server) || FALSE($this->share) || $this->vpath === '' || $this->vpath === '/') {
+		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot rename root folders');
 		}
 		switch (smb_rename($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath), $name)) {
@@ -226,7 +226,7 @@ class Directory extends DAV\FSExt\Directory
 				$this->cache_destroy();
 				$this->invalidate_parent();
 				$this->vpath = basename($this->vpath)."/$name";
-				return TRUE;
+				return true;
 
 			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -271,8 +271,8 @@ class Directory extends DAV\FSExt\Directory
 			return $quota;
 		}
 		// If we're a subdir, make SabreDAV query the root:
-		if (FALSE($this->server) || FALSE($this->share) || $this->vpath !== '/') {
-			return ($quota = FALSE);
+		if ($this->server === false || $this->share === false || $this->vpath !== '/') {
+			return ($quota = false);
 		}
 		// Get results from disk cache if available and fresh:
 		$quota = cache_get('smb_du', array($this->user, $this->pass, $this->server, $this->share), $this->user, $this->pass, 20);
@@ -284,21 +284,21 @@ class Directory extends DAV\FSExt\Directory
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
 			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
 		}
-		return FALSE;
+		return false;
 	}
 
 	public function delete ()
 	{
 		log_trace('delete "'.$this->pretty_name()."\"\n");
 
-		if (FALSE($this->server) || FALSE($this->share) || $this->vpath === '' || $this->vpath === '/') {
+		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot delete root folders');
 		}
 		switch (smb_rmdir($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath))) {
 			case STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
-				return TRUE;
+				return true;
 
 			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -322,44 +322,44 @@ class Directory extends DAV\FSExt\Directory
 		// we're given, we have no way of setting the flags in the
 		// backend.
 
-		return TRUE;
+		return true;
 	}
 
 	public function cache_destroy ()
 	{
 		cache_destroy('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
-		$this->entries = FALSE;
+		$this->entries = false;
 	}
 
 	public function setUserhome ($url)
 	{
-		$this->userhome_server = FALSE;
-		$this->userhome_share = FALSE;
+		$this->userhome_server = false;
+		$this->userhome_share = false;
 
 		// $url must have the form \\server or \\server\share.
 		if (!is_string($url) || strlen($url) < 3 || substr($url, 0, 2) !== '\\\\') {
-			return FALSE;
+			return false;
 		}
 		$url = substr($url, 2);
 
 		// No share, only server:
-		if (FALSE($pos = strpos($url, '\\'))) {
+		if (($pos = strpos($url, '\\')) === false) {
 			$this->userhome_server = $url;
-			return TRUE;
+			return true;
 		}
 		// No server, only share? Error:
 		if ($pos === 0) {
-			return FALSE;
+			return false;
 		}
 		$share = substr($url, $pos + 1);
 
 		// Share has extra slashes?
-		if (!FALSE(strpos($share, '\\'))) {
-			return FALSE;
+		if (strpos($share, '\\') !== false) {
+			return false;
 		}
 		$this->userhome_server = substr($url, 0, $pos);
 		$this->userhome_share = $share;
-		return TRUE;
+		return true;
 	}
 
 	private function get_entries ()
@@ -379,7 +379,7 @@ class Directory extends DAV\FSExt\Directory
 
 	private function invalidate_parent ()
 	{
-		if (!FALSE($this->parent)) {
+		if ($this->parent !== false) {
 			$this->parent->cache_destroy();
 		}
 	}
@@ -388,11 +388,11 @@ class Directory extends DAV\FSExt\Directory
 	{
 		// Return a string with the "pretty name" of this resource: no double slashes, etc:
 		// Guaranteed to end with a slash.
-		if (FALSE($this->server)) return '/';
+		if ($this->server === false) return '/';
 		$str = "//{$this->server}";
-		if (FALSE($this->share)) return $str;
-		if (substr($str, -1, 1) != '/') $str .= '/'; if (FALSE($this->share)) return $str; $str .= (($this->share[0] == '/') ? substr($this->share, 1) : $this->share);
-		if (substr($str, -1, 1) != '/') $str .= '/'; if (FALSE($this->vpath)) return $str; $str .= (($this->vpath[0] == '/') ? substr($this->vpath, 1) : $this->vpath);
+		if ($this->share === false) return $str;
+		if (substr($str, -1, 1) != '/') $str .= '/'; if ($this->share === false) return $str; $str .= (($this->share[0] == '/') ? substr($this->share, 1) : $this->share);
+		if (substr($str, -1, 1) != '/') $str .= '/'; if ($this->vpath === false) return $str; $str .= (($this->vpath[0] == '/') ? substr($this->vpath, 1) : $this->vpath);
 		if (substr($str, -1, 1) != '/') $str .= '/';
 		return $str;
 	}
@@ -408,13 +408,13 @@ class Directory extends DAV\FSExt\Directory
 
 		foreach ($share_root as $entry)
 		{
-			$server = (isset($entry[0])) ? $entry[0] : FALSE;
-			$share  = (isset($entry[1])) ? $entry[1] : FALSE;
+			$server = (isset($entry[0])) ? $entry[0] : false;
+			$share  = (isset($entry[1])) ? $entry[1] : false;
 
-			if (FALSE($server)) {
+			if ($server === false) {
 				continue;
 			}
-			if ($share !== FALSE && $share !== NULL && $share !== '') {
+			if ($share !== false && $share !== null && $share !== '') {
 				$entries[$share] = array($server, $share);
 				continue;
 			}
@@ -434,12 +434,12 @@ class Directory extends DAV\FSExt\Directory
 		}
 		// Servers from $shares_extra get a folder with the name of the *server*:
 		foreach ($share_extra as $entry) {
-			$entries[$entry[0]] = array($entry[0], FALSE);
+			$entries[$entry[0]] = array($entry[0], false);
 		}
 		// The user's home directory gets a folder with the name of the *user*:
-		// User can be FALSE if we allow anonymous logins, in which case ignore:
-		if (!FALSE($this->user) && !FALSE($this->userhome_server)) {
-			if (FALSE($this->userhome_share)) {
+		// User can be false if we allow anonymous logins, in which case ignore:
+		if ($this->user !== false && $this->userhome_server !== false) {
+			if ($this->userhome_share === false) {
 				$entries[$this->user] = array($this->userhome_server, $this->user);
 			}
 			else {
@@ -470,7 +470,7 @@ class Directory extends DAV\FSExt\Directory
 			if ($server != $this->server) {
 				continue;
 			}
-			if ($share !== FALSE && $share !== NULL && $share !== '') {
+			if ($share !== false && $share !== null && $share !== '') {
 				$entries[$share] = 1;
 				continue;
 			}
@@ -490,8 +490,8 @@ class Directory extends DAV\FSExt\Directory
 			}
 		}
 		// User's home share is on this server?
-		if (!FALSE($this->user) && $this->userhome_server && $this->userhome_server == $this->server) {
-			if (FALSE($this->userhome_share)) {
+		if ($this->user !== false && $this->userhome_server && $this->userhome_server == $this->server) {
+			if ($this->userhome_share === false) {
 				$entries[$this->user] = 1;
 			}
 			else {

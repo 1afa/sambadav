@@ -36,9 +36,13 @@ function cache_get ($function, $args = array(), $user_name, $user_pass, $timeout
 {
 	// $user_key is a unique per-user value, used to save lookup
 	// results under that user's identifier.
-	if (FALSE(CACHE_USE)
-	 || FALSE(extension_loaded('mcrypt'))
-	 || FALSE($iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC))) {
+	if (CACHE_USE === false) {
+		return call_user_func_array($function, $args);
+	}
+	if (extension_loaded('mcrypt') === false) {
+		return call_user_func_array($function, $args);
+	}
+	if (($iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC)) === false) {
 		return call_user_func_array($function, $args);
 	}
 	$filename = cache_filename($user_name, $function, $args);
@@ -53,35 +57,39 @@ function cache_get ($function, $args = array(), $user_name, $user_pass, $timeout
 
 function cache_read ($filename, $iv_size, $user_pass, $timeout, &$uns)
 {
-	if (FALSE($fd = @fopen($filename, 'r'))) {
-		return FALSE;
+	if (($fd = @fopen($filename, 'r')) === false) {
+		return false;
 	}
-	if (FALSE(flock($fd, LOCK_SH))) {
+	if (flock($fd, LOCK_SH) === false) {
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
-	if (FALSE($stat = fstat($fd))
+	if (($stat = fstat($fd)) === false
 	 || (time() - $stat['mtime'] > $timeout)
 	 || ($stat['size'] == 0)
-	 || FALSE($data = fread($fd, $stat['size']))) {
+	 || ($data = fread($fd, $stat['size'])) === false) {
 		flock($fd, LOCK_UN);
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
 	flock($fd, LOCK_UN);
 	fclose($fd);
-	if (FALSE($dec = cache_dec($data, $iv_size, $user_pass))
-	 || FALSE($unc = gzuncompress($dec))
-	 || FALSE($uns = unserialize($unc))) {
-		return FALSE;
+	if (($dec = cache_dec($data, $iv_size, $user_pass)) === false) {
+		return false;
 	}
-	return TRUE;
+	if (($unc = gzuncompress($dec)) === false) {
+		return false;
+	}
+	if (($uns = unserialize($unc)) === false) {
+		return false;
+	}
+	return true;
 }
 
 function cache_write ($filename, $iv_size, $user_pass, $data)
 {
-	if (FALSE(file_exists(CACHE_DIR))) {
-		mkdir(CACHE_DIR, 0700, FALSE);
+	if (file_exists(CACHE_DIR) === false) {
+		mkdir(CACHE_DIR, 0700, false);
 	}
 	umask(0177);	// Create all files -rw------
 
@@ -90,37 +98,37 @@ function cache_write ($filename, $iv_size, $user_pass, $data)
 	// unlink it before we manage to modify its mtime by calling
 	// ftruncate(). The worst that can happen is a potential cache miss on
 	// the next lookup. That's not worth serializing cache access for.
-	if (FALSE($fd = fopen($filename, 'a'))) {
-		return FALSE;
+	if (($fd = fopen($filename, 'a')) === false) {
+		return false;
 	}
-	if (FALSE(flock($fd, LOCK_EX))) {
+	if (flock($fd, LOCK_EX) === false) {
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
-	if (FALSE(ftruncate($fd, 0))) {
+	if (ftruncate($fd, 0) === false) {
 		flock($fd, LOCK_UN);
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
-	if (FALSE($ser = serialize($data))
-	 || FALSE($com = gzcompress($ser))
-	 || FALSE($enc = cache_enc($com, $iv_size, $user_pass))
-	 || FALSE(fwrite($fd, $enc))) {
+	if (($ser = serialize($data)) === false
+	 || ($com = gzcompress($ser)) === false
+	 || ($enc = cache_enc($com, $iv_size, $user_pass)) === false
+	 || (fwrite($fd, $enc)) === false) {
 		flock($fd, LOCK_UN);
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
 	fflush($fd);
 	flock($fd, LOCK_UN);
 	fclose($fd);
 	clearstatcache();
-	return TRUE;
+	return true;
 }
 
 function cache_enc ($data, $iv_size, $user_pass)
 {
-	if (FALSE($iv = mcrypt_create_iv($iv_size, MCRYPT_RAND))) {
-		return FALSE;
+	if (($iv = mcrypt_create_iv($iv_size, MCRYPT_RAND)) === false) {
+		return false;
 	}
 	// The key is a salted hash of the user's password;
 	// this salt is not very random, but "good enough";
@@ -139,7 +147,7 @@ function cache_dec ($data, $iv_size, $user_pass)
 
 	// Get the IV and the salt from the front of the encrypted data:
 	if (strlen($data) < $iv_size + $salt_size) {
-		return FALSE;
+		return false;
 	}
 	$iv = substr($data, 0, $iv_size);
 	$salt = substr($data, $iv_size, $salt_size);
@@ -150,32 +158,32 @@ function cache_dec ($data, $iv_size, $user_pass)
 
 function cache_destroy ($function, $args = array(), $user_name)
 {
-	if (FALSE(CACHE_USE)) {
+	if (CACHE_USE === false) {
 		return;
 	}
 	// Try to get blocking lock on cache clean semaphore file:
 	// If this call fails, just steam ahead regardless:
-	$fd = cache_clean_semaphore_open(TRUE);
+	$fd = cache_clean_semaphore_open(true);
 	@unlink(cache_filename($user_name, $function, $args));
 	if ($fd) cache_clean_semaphore_close($fd);
 }
 
 function cache_clean ()
 {
-	if (FALSE(CACHE_USE)) {
-		return FALSE;
+	if (CACHE_USE === false) {
+		return false;
 	}
 	// Must acquire the cache clean semaphore, else assume
 	// that another cleanup thread is already running:
-	if (FALSE($fd = cache_clean_semaphore())) {
-		return FALSE;
+	if (($fd = cache_clean_semaphore()) === false) {
+		return false;
 	}
 	// Remove files older than 60 seconds:
-	if (FALSE($dir = opendir(CACHE_DIR))) {
+	if (($dir = opendir(CACHE_DIR)) === false) {
 		cache_clean_semaphore_close($fd);
-		return FALSE;
+		return false;
 	}
-	while (!FALSE($entry = readdir($dir))) {
+	while (($entry = readdir($dir)) !== false) {
 		if ($entry == '.' || $entry == '..' || $entry == 'last_cleaned') {
 			continue;
 		}
@@ -189,21 +197,21 @@ function cache_clean ()
 	ftruncate($fd, 0);
 	cache_clean_semaphore_close($fd);
 	clearstatcache();
-	return TRUE;
+	return true;
 }
 
 function cache_clean_semaphore ()
 {
-	// Returns FALSE if we are not eligible to clean (semaphore
+	// Returns false if we are not eligible to clean (semaphore
 	// file is locked, or timestamp too recent), else returns fd
 	// of semaphore file.
-	if (FALSE($fd = cache_clean_semaphore_open(FALSE))) {
-		return FALSE;
+	if (($fd = cache_clean_semaphore_open(false)) === false) {
+		return false;
 	}
 	// File modification time too recent?
-	if (FALSE($stat = fstat($fd)) || (time() - $stat['mtime']) < 60) {
+	if (($stat = fstat($fd)) === false || (time() - $stat['mtime']) < 60) {
 		cache_clean_semaphore_close($fd);
-		return FALSE;
+		return false;
 	}
 	return $fd;
 }
@@ -211,16 +219,16 @@ function cache_clean_semaphore ()
 function cache_clean_semaphore_open ($block)
 {
 	// Returns the fd of the semaphore file in locked state if we
-	// were able to acquire it, else FALSE.
+	// were able to acquire it, else false.
 	for ($i = 0; $i < 2; $i++) {
-		if (!FALSE($fd = @fopen(CACHE_CLEAN_SEMAPHORE, 'a'))) {
+		if (($fd = @fopen(CACHE_CLEAN_SEMAPHORE, 'a')) !== false) {
 			break;
 		}
 		// Does dir need to be made? Do so and retry:
-		if (FALSE(file_exists(CACHE_DIR)) && mkdir(CACHE_DIR, 0700, FALSE)) {
+		if (file_exists(CACHE_DIR) === false && mkdir(CACHE_DIR, 0700, false)) {
 			continue;
 		}
-		return FALSE;
+		return false;
 	}
 	if ($block && flock($fd, LOCK_EX)) {
 		return $fd;
@@ -229,7 +237,7 @@ function cache_clean_semaphore_open ($block)
 		return $fd;
 	}
 	fclose($fd);
-	return FALSE;
+	return false;
 }
 
 function cache_clean_semaphore_close ($fd)

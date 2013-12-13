@@ -63,28 +63,28 @@ class Propflags
 		, 'E' => 0x4000
 		) ;
 
-	private $init = FALSE;
+	private $init = false;
 
-	public function __construct ($smbflags = FALSE)
+	public function __construct ($smbflags = false)
 	{
-		if ($smbflags !== FALSE) $this->from_smbflags($smbflags);
+		if ($smbflags !== false) $this->from_smbflags($smbflags);
 	}
 
 	public function from_win32 ($msflags)
 	{
 		if (strlen($msflags) !== 8
 		 || sscanf($msflags, '%08x', $flags) !== 1) {
-			return $this->init = FALSE;
+			return $this->init = false;
 		}
 		foreach (array_keys($this->flags) as $flag) {
 			$this->flags[$flag] = ($flags & $this->bitmask[$flag]) ? 1 : 0;
 		}
-		return $this->init = TRUE;
+		return $this->init = true;
 	}
 
 	public function to_win32 ()
 	{
-		if ($this->init === FALSE) return FALSE;
+		if ($this->init === false) return false;
 
 		$msflags = 0;
 
@@ -127,12 +127,12 @@ class Propflags
 	public function set ($flag, $val)
 	{
 		$this->flags[$flag] = ((int)$val) ? 1 : 0;
-		$this->init = TRUE;
+		$this->init = true;
 	}
 
 	public function get ($flag)
 	{
-		return ($this->init) ? $this->flags[$flag] : FALSE;
+		return ($this->init) ? $this->flags[$flag] : false;
 	}
 
 	private function from_smbflags ($smbflags)
@@ -140,8 +140,8 @@ class Propflags
 		// The 'smbflags' are the ones found in the output of
 		// smbclient's `ls` command. They are case-sensitive.
 		foreach (array_keys($this->flags) as $flag) {
-			$this->flags[$flag] = (strpos($smbflags, $flag) === FALSE) ? 0 : 1;
+			$this->flags[$flag] = (strpos($smbflags, $flag) === false) ? 0 : 1;
 		}
-		return $this->init = TRUE;
+		return $this->init = true;
 	}
 }

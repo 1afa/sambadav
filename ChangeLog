@@ -1,3 +1,5 @@
+- Change FALSE() and FALSE to comparisons with 'false', which is more standard.
+
 * Thu Nov 07 2013 Alfred Klomp <alfred@bokxing-it.nl> v0.2.1
 - Print a simple login form when basic authentication fails; this login form
   uses JavaScript to load the credentials into the browser's authentication

@@ -73,7 +73,7 @@ class File extends DAV\FSExt\File
 			case STATUS_OK:
 				$this->invalidate_parent();
 				$this->fname = $name;
-				return TRUE;
+				return true;
 
 			case STATUS_NOTFOUND: $this->exc_notfound();
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -180,7 +180,7 @@ class File extends DAV\FSExt\File
 		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
 		$new_flags = clone $this->flags;
-		$invalidate = FALSE;
+		$invalidate = false;
 
 		foreach ($mutations as $key => $val) {
 			switch ($key) {
@@ -216,7 +216,7 @@ class File extends DAV\FSExt\File
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
 			switch (smb_setmode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
 				case STATUS_OK:
-					$invalidate = TRUE;
+					$invalidate = true;
 					continue;
 
 				case STATUS_NOTFOUND: $this->exc_notfound();
@@ -230,7 +230,7 @@ class File extends DAV\FSExt\File
 			$this->invalidate_parent();
 			$this->flags = $this->new_flags;
 		}
-		return TRUE;
+		return true;
 	}
 
 	public function delete ()
@@ -239,7 +239,7 @@ class File extends DAV\FSExt\File
 		switch (smb_rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {
 			case STATUS_OK:
 				$this->invalidate_parent();
-				return TRUE;
+				return true;
 
 			case STATUS_NOTFOUND: $this->exc_notfound();
 			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -250,7 +250,7 @@ class File extends DAV\FSExt\File
 
 	private function invalidate_parent ()
 	{
-		if (!FALSE($this->parent)) {
+		if ($this->parent !== false) {
 			$this->parent->cache_destroy();
 		}
 	}

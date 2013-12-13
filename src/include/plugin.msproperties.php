@@ -35,15 +35,15 @@ class MSPropertiesPlugin extends DAV\ServerPlugin
 
 	function afterGetProperties ($uri, &$properties, \Sabre\DAV\INode $node)
 	{
-		$isHidden   = (method_exists($node, 'getIsHidden'))   ? $node->getIsHidden()   : FALSE;
-		$isReadonly = (method_exists($node, 'getIsReadonly')) ? $node->getIsReadonly() : FALSE;
-		$winProps   = (method_exists($node, 'getWin32Props')) ? $node->getWin32Props() : FALSE;
+		$isHidden   = (method_exists($node, 'getIsHidden'))   ? $node->getIsHidden()   : false;
+		$isReadonly = (method_exists($node, 'getIsReadonly')) ? $node->getIsReadonly() : false;
+		$winProps   = (method_exists($node, 'getWin32Props')) ? $node->getWin32Props() : false;
 
-		if (!FALSE($isHidden))   $this->addProp($properties, '{DAV:}ishidden',   $isHidden);
-		if (!FALSE($isReadonly)) $this->addProp($properties, '{DAV:}isreadonly', $isReadonly);
-		if (!FALSE($winProps))   $this->addProp($properties, '{urn:schemas-microsoft-com:}Win32FileAttributes', $winProps);
+		if ($isHidden   !== false) $this->addProp($properties, '{DAV:}ishidden',   $isHidden);
+		if ($isReadonly !== false) $this->addProp($properties, '{DAV:}isreadonly', $isReadonly);
+		if ($winProps   !== false) $this->addProp($properties, '{urn:schemas-microsoft-com:}Win32FileAttributes', $winProps);
 
-		return TRUE;
+		return true;
 	}
 
 	function addProp (&$properties, $key, $val)

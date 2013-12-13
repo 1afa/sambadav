@@ -27,17 +27,17 @@ require_once 'class.smbprocess.php';
 
 function smb_get_line ($fd, &$nline)
 {
-	// Returns FALSE if no more lines;
+	// Returns false if no more lines;
 	// Returns Array(errorcode) if error found;
 	// Returns the line as a string if all is well.
 
 	if (!is_resource($fd)) {
-		return FALSE;
+		return false;
 	}
-	while (TRUE)
+	while (true)
 	{
-		if (FALSE($line = fgets($fd))) {
-			return FALSE;
+		if (($line = fgets($fd)) === false) {
+			return false;
 		}
 		if ($nline++ < 2 && preg_match('/(NT_STATUS_[A-Z0-9_]*)/', $line, $matches) === 1) {
 			switch ($matches[1])
@@ -97,7 +97,7 @@ function smb_parse_file_line ($line)
 
 	//                  Name Flags          Size                   Mon            Mar            8         13:00:07  2010
 	if (preg_match("/^  (.*)([A-Za-z ]{7}) ([0-9]{8,}|[0-9 ]{8})  (.*)$/", rtrim($line), $matches) === 0) {
-		return FALSE;
+		return false;
 	}
 	$output = Array(
 		rtrim($matches[1]),	// filename
@@ -107,7 +107,7 @@ function smb_parse_file_line ($line)
 	// Create Unix timestamp from freeform date string:
 	$date = date_parse($matches[4]);
 
-	$output[] = (FALSE($date)) ? 0 : mktime($date['hour'], $date['minute'], $date['second'], $date['month'], $date['day'], $date['year']);
+	$output[] = ($date === false) ? 0 : mktime($date['hour'], $date['minute'], $date['second'], $date['month'], $date['day'], $date['year']);
 
 	return $output;
 }
@@ -118,7 +118,7 @@ function smb_get_status ($fd)
 	// if everything could be read without encountering errors
 	// (as parsed by smb_get_line), else it returns the error code.
 	$nline = 0;
-	while (!FALSE($line = smb_get_line($fd, $nline))) {
+	while (($line = smb_get_line($fd, $nline)) !== false) {
 		if (is_array($line)) {
 			return $line[0];
 		}
@@ -131,12 +131,12 @@ function smb_get_resources ($user, $pass, $server)
 	$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE($proc->open($args, FALSE))) {
+	if ($proc->open($args, false) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	$nline = 0;
 	$resources = array();
-	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
+	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
 		if (is_array($line)) {
 			return $line[0];
 		}
@@ -156,7 +156,7 @@ function smb_get_shares ($server, $user, $pass)
 		if (strpos($line, 'Disk|') !== 0) {
 			continue;
 		}
-		if (FALSE($term = strpos($line, '|', 5)) || $term === 5) {
+		if (($term = strpos($line, '|', 5)) === false || $term === 5) {
 			continue;
 		}
 		$name = substr($line, 5, $term - 5);
@@ -173,23 +173,23 @@ function smb_ls ($user, $pass, $server, $share, $path)
 {
 	log_trace("smb_ls \"//$server/$share$path\"\n");
 
-	if (FALSE(smb_check_pathname($path))) {
+	if (smb_check_pathname($path) === false) {
 		return STATUS_INVALID_NAME;
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, 'ls');
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE($proc->open($args, $scmd))) {
+	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	$nline = 0;
 	$ret = Array();
-	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
+	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
 		if (is_array($line)) {
 			return $line[0];
 		}
-		if (!FALSE($parsed = smb_parse_file_line($line))) {
+		if (($parsed = smb_parse_file_line($line)) !== false) {
 			$ret[] = $parsed;
 		}
 	}
@@ -204,13 +204,13 @@ function smb_du ($user, $pass, $server, $share)
 	$scmd = smb_mk_cmd('/', 'du');
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE($proc->open($args, $scmd))) {
+	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	// The 'du' command only gives a global total for the entire share;
 	// the Unix 'du' can do a tally for a subdir, but this one can't.
 	$nline = 0;
-	while (!FALSE($line = smb_get_line($proc->fd[1], $nline))) {
+	while (($line = smb_get_line($proc->fd[1], $nline)) !== false) {
 		if (is_array($line)) {
 			return $line[0];
 		}
@@ -222,15 +222,15 @@ function smb_du ($user, $pass, $server, $share)
 			$matches[2] * $matches[3]			// available space (bytes)
 		);
 	}
-	return FALSE;
+	return false;
 }
 
 function smb_get ($server, $share, $path, $file, $proc)
 {
 	log_trace("smb_get \"//$server/$share$path/$file\"\n");
 
-	if (FALSE(smb_check_pathname($path))
-	 || FALSE(smb_check_filename($file))) {
+	if (smb_check_pathname($path) === false
+	 || smb_check_filename($file) === false) {
 		return STATUS_INVALID_NAME;
 	}
 	$args = escapeshellarg("//$server/$share");
@@ -239,7 +239,7 @@ function smb_get ($server, $share, $path, $file, $proc)
 	// NB: because we want to return an open file handle, the caller needs
 	// to supply the Process class. Otherwise the proc and the fds are
 	// local to this function and are garbage collected upon return:
-	if (FALSE($proc->open($args, $scmd))) {
+	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	fclose($proc->fd[1]);
@@ -252,15 +252,15 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 {
 	log_trace("smb_put \"//$server/$share$path/$file\"\n");
 
-	if (FALSE(smb_check_pathname($path))
-	 || FALSE(smb_check_filename($file))) {
+	if (smb_check_pathname($path) === false
+	 || smb_check_filename($file) === false) {
 		return STATUS_INVALID_NAME;
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, "put /proc/self/fd/4 \"$file\"");
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE($proc->open($args, $scmd))) {
+	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	// If an error occurs, the error message will be on stdout before we
@@ -281,7 +281,7 @@ function smb_put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 		$md5 = md5s_get_hash();
 	}
 	else {
-		if (FALSE(fwrite($proc->fd[4], $data))) {
+		if (fwrite($proc->fd[4], $data) === false) {
 			return STATUS_SMBCLIENT_ERROR;
 		}
 		$md5 = md5($data);
@@ -297,14 +297,14 @@ function smb_cmd_simple ($user, $pass, $server, $share, $path, $cmd)
 
 	log_trace("smb_cmd_simple: \"//$server/$share$path\": $cmd\n");
 
-	if (FALSE(smb_check_pathname($path))) {
+	if (smb_check_pathname($path) === false) {
 		return STATUS_INVALID_NAME;
 	}
 	$args = escapeshellarg("//$server/$share");
 	$scmd = smb_mk_cmd($path, $cmd);
 	$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
-	if (FALSE($proc->open($args, $scmd))) {
+	if ($proc->open($args, $scmd) === false) {
 		return STATUS_SMBCLIENT_ERROR;
 	}
 	return smb_get_status($proc->fd[1]);
@@ -334,7 +334,7 @@ function smb_check_filename ($filename)
 		20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
 		30, 31
 	);
-	return FALSE(strpbrk($filename, $bad));
+	return (strpbrk($filename, $bad) === false);
 }
 
 function smb_check_pathname ($pathname)
@@ -351,7 +351,7 @@ function smb_check_pathname ($pathname)
 		20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
 		30, 31
 	);
-	return FALSE(strpbrk($pathname, $bad));
+	return (strpbrk($pathname, $bad) === false);
 }
 
 function smb_rm ($user, $pass, $server, $share, $path, $filename)
