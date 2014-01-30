@@ -21,8 +21,6 @@
 
 namespace SambaDAV;
 
-require_once 'common.inc.php';
-
 class LDAP
 {
 	private $conn = false;
@@ -42,12 +40,12 @@ class LDAP
 		if (($this->conn = ldap_connect($this->host)) === false) {
 			return false;
 		}
-		// Suppress errors with the @ prefix because a bind error is *expected*
-		// in case of a failed login; no need to pollute the error log:
 		if (ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3) === false) {
 			ldap_close($this->conn);
 			return false;
 		}
+		// Suppress errors with the @ prefix because a bind error is *expected*
+		// in case of a failed login; no need to pollute the error log:
 		if (@ldap_bind($this->conn, sprintf('uid=%s,ou=Users,%s', $this->escape($user), $this->escape($this->basedn)), $pass) === false) {
 			ldap_close($this->conn);
 			return false;
@@ -85,11 +83,12 @@ class LDAP
 				}
 			}
 			if ($this->host !== false && $this->basedn !== false) {
-				break;
+				fclose($fp);
+				return true;
 			}
 		}
 		fclose($fp);
-		return ($this->host !== false && $this->basedn !== false);
+		return false;
 	}
 
 	private function userSearch ($user)
