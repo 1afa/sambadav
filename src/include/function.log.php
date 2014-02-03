@@ -21,7 +21,7 @@
 
 date_default_timezone_set('Europe/Berlin');
 
-$trace_log = FALSE;
+$trace_log = false;
 
 function log_trace ()
 {
@@ -45,13 +45,13 @@ function log_trace ()
 function file_open_lock_append ($filename)
 {
 	// Open the file for appending, lock it.
-	// Returns file handle, or FALSE on error.
-	if (FALSE($fd = fopen($filename, 'a'))) {
-		return FALSE;
+	// Returns file handle, or false on error.
+	if (($fd = fopen($filename, 'a')) === false) {
+		return false;
 	}
-	if (FALSE(flock($fd, LOCK_EX))) {
+	if ((flock($fd, LOCK_EX)) === false) {
 		fclose($fd);
-		return FALSE;
+		return false;
 	}
 	chmod($filename, 0600);
 	return $fd;

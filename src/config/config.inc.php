@@ -25,15 +25,15 @@ define('SERVER_BASEDIR', '/webfolders/');
 // Full path to the smbclient utility:
 define('SMBCLIENT_PATH', '/usr/bin/smbclient');
 
-// Extra options to smbclient, pasted verbatim on commandline if not FALSE;
+// Extra options to smbclient, pasted verbatim on commandline if not false;
 // see manpage for smbclient; example: '--port 6789 -O TCP_NODELAY'
-define('SMBCLIENT_EXTRA_OPTS', FALSE);
+define('SMBCLIENT_EXTRA_OPTS', false);
 
 // Allow anonymous logins/browsing (no username/pass):
-define('ANONYMOUS_ALLOW', FALSE);
+define('ANONYMOUS_ALLOW', false);
 
 // Allow *only* anonymous logins: this disables the password prompt; implies ANONYMOUS_ALLOW:
-define('ANONYMOUS_ONLY', FALSE);
+define('ANONYMOUS_ONLY', false);
 
 // Don't procure eTags for files larger than this size (bytes):
 // NB: calculating the eTag is very resource-intensive, because the file must
@@ -41,15 +41,15 @@ define('ANONYMOUS_ONLY', FALSE);
 // doesn't really justify the significant processing overhead.
 define('ETAG_SIZE_LIMIT', -1);
 
-// Set to TRUE to use disk cache in /dev/shm/webfolders, FALSE to disable:
-define('CACHE_USE', TRUE);
+// Set to true to use disk cache in /dev/shm/webfolders, false to disable:
+define('CACHE_USE', true);
 
 // Dir to use for cache files; preferably keep this in /dev/shm for speed;
 // the lowest-level directory is created if not exists:
 define('CACHE_DIR', '/dev/shm/webfolders');
 
 // Use LDAP authentication on top of smbclient authentication?
-define('LDAP_AUTH', FALSE);
+define('LDAP_AUTH', false);
 
-// Array of LDAP group(s) that the user must be a member of, FALSE for bind-only check:
-$ldap_groups = FALSE;
+// Array of LDAP group(s) that the user must be a member of, false for bind-only check:
+$ldap_groups = false;
