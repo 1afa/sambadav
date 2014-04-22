@@ -37,7 +37,7 @@ require_once 'lib/SabreDAV/vendor/autoload.php';
 require_once 'include/class.ldap.php';
 require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
-require_once 'include/function.cache.php';
+require_once 'include/class.cache.php';
 require_once 'include/plugin.msproperties.php';
 require_once 'include/function.loginform.php';
 
@@ -120,7 +120,7 @@ else {
 // Time-based throttling to prevent too-frequent rechecking;
 // Random-based throttling to prevent contention in the "available" second:
 if ((time() % 5) == 0 && rand(0, 9) == 8) {
-	cache_clean();
+	\SambaDAV\Cache::clean();
 }
 // No server, share and path known in root dir:
 $rootDir = new \SambaDAV\Directory(false, false, false, false, 'D', $user, $pass);

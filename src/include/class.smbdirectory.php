@@ -25,7 +25,7 @@ require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'common.inc.php';
 require_once 'function.smb.php';
 require_once 'function.log.php';
-require_once 'function.cache.php';
+require_once 'class.cache.php';
 require_once 'class.propflags.php';
 
 // Dynamic shares config; these are optional includes:
@@ -275,7 +275,7 @@ class Directory extends DAV\FSExt\Directory
 			return ($quota = false);
 		}
 		// Get results from disk cache if available and fresh:
-		$quota = cache_get('smb_du', array($this->user, $this->pass, $this->server, $this->share), $this->user, $this->pass, 20);
+		$quota = Cache::get('smb_du', array($this->user, $this->pass, $this->server, $this->share), $this->user, $this->pass, 20);
 		if (is_array($quota)) {
 			return $quota;
 		}
@@ -327,7 +327,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function cache_destroy ()
 	{
-		cache_destroy('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
+		Cache::destroy('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user);
 		$this->entries = false;
 	}
 
@@ -365,7 +365,7 @@ class Directory extends DAV\FSExt\Directory
 	private function get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
-		$this->entries = cache_get('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user, $this->pass, 5);
+		$this->entries = Cache::get('smb_ls', array($this->user, $this->pass, $this->server, $this->share, $this->vpath), $this->user, $this->pass, 5);
 		if (is_array($this->entries)) {
 			return;
 		}
@@ -419,7 +419,7 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			// Just the server name given; autodiscover all shares on this server:
-			if (!is_array($shares = cache_get('smb_get_shares', array($server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('smb_get_shares', array($server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
@@ -476,7 +476,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 			// Only our server name given in $share_extra;
 			// this means: autodiscover and use all the shares on this server:
-			if (!is_array($shares = cache_get('smb_get_shares', array($this->server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('smb_get_shares', array($this->server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());

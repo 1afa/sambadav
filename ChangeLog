@@ -1,3 +1,4 @@
+- Put all cache functions into static class;
 - Factor smbclient output parser into its own class;
 - Change FALSE() and FALSE to comparisons with 'false', which is more standard.
 
