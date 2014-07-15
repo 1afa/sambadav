@@ -1,0 +1,15 @@
+{
+	"name" : "bokxing-it/sambadav",
+	"require" : {
+		"sabre/dav" : "1.8.6"
+	},
+	"license" : "agpl",
+	"authors" : [
+		{
+			"name" : "Alfred Klomp",
+			"email" : "alfred@1afa.com",
+			"role" : "Developer"
+		}
+	],
+	"minimum-stability" : "stable"
+}

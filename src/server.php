@@ -35,7 +35,8 @@ if (!isset($enable_webfolders) || $enable_webfolders !== true) {
 use Sabre\DAV;
 use Sabre\HTTP;
 
-require_once 'lib/SabreDAV/vendor/autoload.php';
+include __DIR__ . '/vendor/autoload.php';
+
 require_once 'include/class.ldap.php';
 require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
