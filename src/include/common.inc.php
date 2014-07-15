@@ -24,8 +24,3 @@ define('STATUS_NOTFOUND',		1);
 define('STATUS_UNAUTHENTICATED',	2);
 define('STATUS_INVALID_NAME',		3);
 define('STATUS_SMBCLIENT_ERROR',	4);
-
-function FALSE ($expr)
-{
-	return ($expr === FALSE);
-}
