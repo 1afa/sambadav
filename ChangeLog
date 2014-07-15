@@ -1,3 +1,4 @@
+- Rework all global logging functions into a static Log class;
 - Rework all loose smb_ functions into a static SMB class;
 - Put all cache functions into static class;
 - Factor smbclient output parser into its own class;

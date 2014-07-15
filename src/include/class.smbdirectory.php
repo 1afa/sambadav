@@ -23,7 +23,7 @@ namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'class.smb.php';
-require_once 'function.log.php';
+require_once 'class.log.php';
 require_once 'class.cache.php';
 require_once 'class.propflags.php';
 
@@ -99,7 +99,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function getChild ($name)
 	{
-		log_trace('getChild "'.$this->pretty_name()."$name\"\n");
+		Log::trace('getChild "'.$this->pretty_name()."$name\"\n");
 
 		// Are we a folder in the root dir?
 		if ($this->server === false) {
@@ -140,7 +140,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function createDirectory ($name)
 	{
-		log_trace('createDirectory "'.$this->pretty_name()."$name\"\n");
+		Log::trace('createDirectory "'.$this->pretty_name()."$name\"\n");
 
 		// Cannot create directories in the root:
 		if ($this->server === false || $this->share === false) {
@@ -161,7 +161,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function createFile ($name, $data = NULL)
 	{
-		log_trace('createFile "'.$this->pretty_name()."$name\"\n");
+		Log::trace('createFile "'.$this->pretty_name()."$name\"\n");
 
 		if ($this->server === false || $this->share === false) {
 			$this->exc_forbidden('Cannot create files in root');
@@ -215,7 +215,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function setName ($name)
 	{
-		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
+		Log::trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 
 		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot rename root folders');
@@ -251,7 +251,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function getQuotaInfo ()
 	{
-		log_trace('getQuotaInfo "'.$this->pretty_name()."\"\n");
+		Log::trace('getQuotaInfo "'.$this->pretty_name()."\"\n");
 
 		// NB: Windows 7 uses/needs this method. Must return array.
 		// We refuse to do the actual lookup, because:
@@ -288,7 +288,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function delete ()
 	{
-		log_trace('delete "'.$this->pretty_name()."\"\n");
+		Log::trace('delete "'.$this->pretty_name()."\"\n");
 
 		if ($this->server === false || $this->share === false || $this->vpath === '' || $this->vpath === '/') {
 			$this->exc_notimplemented('cannot delete root folders');
@@ -503,35 +503,35 @@ class Directory extends DAV\FSExt\Directory
 	private function exc_smbclient ()
 	{
 		$m = 'smbclient error';
-		log_trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
+		Log::trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
 		throw new DAV\Exception($m);
 	}
 
 	private function exc_forbidden ($msg)
 	{
 		$m = "Forbidden: $msg";
-		log_trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
+		Log::trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
 		throw new DAV\Exception\Forbidden($m);
 	}
 
 	private function exc_notfound ($name)
 	{
 		$m = "Not found: \"$name\"";
-		log_trace("EXCEPTION: $m\n");
+		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
 	private function exc_unauthenticated ()
 	{
 		$m = '"'.$this->user.'" not authenticated for "'.$this->pretty_name()."\"";
-		log_trace("EXCEPTION: $m\n");
+		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}
 
 	private function exc_notimplemented ($msg)
 	{
 		$m = "Not implemented: $msg";
-		log_trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
+		Log::trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
 		throw new DAV\Exception\Forbidden($m);
 	}
 }

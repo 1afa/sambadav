@@ -22,7 +22,7 @@
 namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'function.log.php';
+require_once 'class.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.smbprocess.php';
 require_once 'class.smbparser.php';
@@ -51,7 +51,7 @@ class SMB
 	public static function
 	ls ($user, $pass, $server, $share, $path)
 	{
-		log_trace("SMB::ls \"//$server/$share$path\"\n");
+		Log::trace("SMB::ls \"//$server/$share$path\"\n");
 
 		if (self::checkPathname($path) === false) {
 			return self::STATUS_INVALID_NAME;
@@ -70,7 +70,7 @@ class SMB
 	public static function
 	du ($user, $pass, $server, $share)
 	{
-		log_trace("SMB::du \"//$server/$share\"\n");
+		Log::trace("SMB::du \"//$server/$share\"\n");
 
 		$args = escapeshellarg("//$server/$share");
 		$scmd = self::makeCmd('/', 'du');
@@ -86,7 +86,7 @@ class SMB
 	public static function
 	get ($server, $share, $path, $file, $proc)
 	{
-		log_trace("SMB::get \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::get \"//$server/$share$path/$file\"\n");
 
 		if (self::checkPathname($path) === false) {
 			return self::STATUS_INVALID_NAME;
@@ -112,7 +112,7 @@ class SMB
 	public static function
 	put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
 	{
-		log_trace("SMB::put \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::put \"//$server/$share$path/$file\"\n");
 
 		if (self::checkPathname($path) === false) {
 			return self::STATUS_INVALID_NAME;
@@ -161,7 +161,7 @@ class SMB
 		// A helper function that sends a simple (silent)
 		// command to smbclient and reports the result status.
 
-		log_trace("SMB::cmdSimple: \"//$server/$share$path\": $cmd\n");
+		Log::trace("SMB::cmdSimple: \"//$server/$share$path\": $cmd\n");
 
 		if (self::checkPathname($path) === false) {
 			return self::STATUS_INVALID_NAME;

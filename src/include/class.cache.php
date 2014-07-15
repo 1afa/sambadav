@@ -22,7 +22,6 @@
 namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'function.log.php';
 
 // This file is used as a lockfile and timestamp for the cache cleanup process,
 // so that no cache writes can be done during a cleanup, and vice versa:

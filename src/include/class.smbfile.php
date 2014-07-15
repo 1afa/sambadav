@@ -23,7 +23,7 @@ namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
 require_once 'class.smb.php';
-require_once 'function.log.php';
+require_once 'class.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.propflags.php';
 require_once 'class.smbprocess.php';
@@ -67,7 +67,7 @@ class File extends DAV\FSExt\File
 
 	public function setName ($name)
 	{
-		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
+		Log::trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 		switch (SMB::rename($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $name)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
@@ -87,7 +87,7 @@ class File extends DAV\FSExt\File
 		// the proc object stays alive after we leave this function.
 		// So we use a global class variable to store it.
 		// It's not pretty, but it makes real streaming possible.
-		log_trace('get "'.$this->pretty_name()."\"\n");
+		Log::trace('get "'.$this->pretty_name()."\"\n");
 
 		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
 
@@ -102,7 +102,7 @@ class File extends DAV\FSExt\File
 
 	public function put ($data)
 	{
-		log_trace('put "'.$this->pretty_name()."\"\n");
+		Log::trace('put "'.$this->pretty_name()."\"\n");
 		switch (SMB::put($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
@@ -119,13 +119,13 @@ class File extends DAV\FSExt\File
 	{
 		// Sorry bro, smbclient is not that advanced:
 		// Override the inherited method from the base class:
-		log_trace('EXCEPTION: putRange "'.$this->pretty_name()."\" not implemented\n");
+		Log::trace('EXCEPTION: putRange "'.$this->pretty_name()."\" not implemented\n");
 		throw new DAV\Exception\NotImplemented("PutRange() not available due to limitations of smbclient");
 	}
 
 	public function getETag ()
 	{
-		log_trace('getETag "'.$this->pretty_name()."\"\n");
+		Log::trace('getETag "'.$this->pretty_name()."\"\n");
 		// Don't bother if the file is too large:
 		if ($this->fsize > ETAG_SIZE_LIMIT) {
 			return null;
@@ -176,7 +176,7 @@ class File extends DAV\FSExt\File
 
 	public function updateProperties ($mutations)
 	{
-		log_trace('updateProperties: "'.$this->pretty_name()."\"\n");
+		Log::trace('updateProperties: "'.$this->pretty_name()."\"\n");
 
 		$new_flags = clone $this->flags;
 		$invalidate = false;
@@ -234,7 +234,7 @@ class File extends DAV\FSExt\File
 
 	public function delete ()
 	{
-		log_trace('delete "'.$this->pretty_name()."\"\n");
+		Log::trace('delete "'.$this->pretty_name()."\"\n");
 		switch (SMB::rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
@@ -268,28 +268,28 @@ class File extends DAV\FSExt\File
 	{
 		// Only one type of Forbidden error right now: invalid filename or pathname
 		$m = 'Forbidden: invalid pathname or filename';
-		log_trace("EXCEPTION: $m\n");
+		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\Forbidden($m);
 	}
 
 	private function exc_notfound ()
 	{
 		$m = 'Not found: "'.$this->pretty_name().'"';
-		log_trace("EXCEPTION: $m\n");
+		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
 	private function exc_smbclient ()
 	{
 		$m = 'smbclient error';
-		log_trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
+		Log::trace('EXCEPTION: "'.$this->pretty_name()."\": $m\n");
 		throw new DAV\Exception($m);
 	}
 
 	private function exc_unauthenticated ()
 	{
 		$m = "\"{$this->user}\" not authenticated for \"".$this->pretty_name().'"';
-		log_trace("EXCEPTION: $m\n");
+		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}
 }
