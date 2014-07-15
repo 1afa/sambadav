@@ -22,7 +22,6 @@
 namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'common.inc.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
 require_once 'class.smbprocess.php';
@@ -30,6 +29,12 @@ require_once 'class.smbparser.php';
 
 class SMB
 {
+	const STATUS_OK			= 0;
+	const STATUS_NOTFOUND		= 1;
+	const STATUS_UNAUTHENTICATED	= 2;
+	const STATUS_INVALID_NAME	= 3;
+	const STATUS_SMBCLIENT_ERROR	= 4;
+
 	public static function
 	getShares ($server, $user, $pass)
 	{
@@ -37,7 +42,7 @@ class SMB
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, false) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		$parser = new \SambaDAV\SMBClient\Parser($proc);
 		return $parser->getShares();
@@ -49,14 +54,14 @@ class SMB
 		log_trace("SMB::ls \"//$server/$share$path\"\n");
 
 		if (self::checkPathname($path) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		$args = escapeshellarg("//$server/$share");
 		$scmd = self::makeCmd($path, 'ls');
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		$parser = new \SambaDAV\SMBClient\Parser($proc);
 		return $parser->getListing();
@@ -72,7 +77,7 @@ class SMB
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		$parser = new \SambaDAV\SMBClient\Parser($proc);
 		return $parser->getDiskUsage();
@@ -84,10 +89,10 @@ class SMB
 		log_trace("SMB::get \"//$server/$share$path/$file\"\n");
 
 		if (self::checkPathname($path) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		if (self::checkFilename($file) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		$args = escapeshellarg("//$server/$share");
 		$scmd = self::makeCmd($path, "get \"$file\" /proc/self/fd/5");
@@ -96,12 +101,12 @@ class SMB
 		// to supply the Process class. Otherwise the proc and the fds are
 		// local to this function and are garbage collected upon return:
 		if ($proc->open($args, $scmd) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		fclose($proc->fd[1]);
 		fclose($proc->fd[2]);
 		fclose($proc->fd[4]);
-		return STATUS_OK;
+		return self::STATUS_OK;
 	}
 
 	public static function
@@ -110,17 +115,17 @@ class SMB
 		log_trace("SMB::put \"//$server/$share$path/$file\"\n");
 
 		if (self::checkPathname($path) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		if (self::checkFilename($file) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		$args = escapeshellarg("//$server/$share");
 		$scmd = self::makeCmd($path, "put /proc/self/fd/4 \"$file\"");
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		// If an error occurs, the error message will be on stdout before we
 		// even have a chance to upload; but otherwise there won't be anything
@@ -141,7 +146,7 @@ class SMB
 		}
 		else {
 			if (fwrite($proc->fd[4], $data) === false) {
-				return STATUS_SMBCLIENT_ERROR;
+				return self::STATUS_SMBCLIENT_ERROR;
 			}
 			$md5 = md5($data);
 		}
@@ -159,14 +164,14 @@ class SMB
 		log_trace("SMB::cmdSimple: \"//$server/$share$path\": $cmd\n");
 
 		if (self::checkPathname($path) === false) {
-			return STATUS_INVALID_NAME;
+			return self::STATUS_INVALID_NAME;
 		}
 		$args = escapeshellarg("//$server/$share");
 		$scmd = self::makeCmd($path, $cmd);
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
-			return STATUS_SMBCLIENT_ERROR;
+			return self::STATUS_SMBCLIENT_ERROR;
 		}
 		$parser = new \SambaDAV\SMBClient\Parser($proc);
 		return $parser->getStatus();

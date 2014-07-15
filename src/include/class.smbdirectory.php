@@ -22,7 +22,6 @@
 namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'common.inc.php';
 require_once 'class.smb.php';
 require_once 'function.log.php';
 require_once 'class.cache.php';
@@ -148,15 +147,15 @@ class Directory extends DAV\FSExt\Directory
 			$this->exc_forbidden('Cannot create shares in root');
 		}
 		switch (SMB::mkdir($this->user, $this->pass, $this->server, $this->share, $this->vpath, $name)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
 				return true;
 
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
 	}
 
@@ -168,15 +167,15 @@ class Directory extends DAV\FSExt\Directory
 			$this->exc_forbidden('Cannot create files in root');
 		}
 		switch (SMB::put($this->user, $this->pass, $this->server, $this->share, $this->vpath, basename($name), $data, $md5)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
 				return ($md5 === NULL) ? NULL : "\"$md5\"";
 
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
 	}
 
@@ -222,16 +221,16 @@ class Directory extends DAV\FSExt\Directory
 			$this->exc_notimplemented('cannot rename root folders');
 		}
 		switch (SMB::rename($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath), $name)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
 				$this->vpath = basename($this->vpath)."/$name";
 				return true;
 
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
 	}
 
@@ -280,9 +279,9 @@ class Directory extends DAV\FSExt\Directory
 			return $quota;
 		}
 		switch ($quota) {
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
 		}
 		return false;
 	}
@@ -295,15 +294,15 @@ class Directory extends DAV\FSExt\Directory
 			$this->exc_notimplemented('cannot delete root folders');
 		}
 		switch (SMB::rmdir($this->user, $this->pass, $this->server, $this->share, dirname($this->vpath), basename($this->vpath))) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
 				return true;
 
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
 	}
 
@@ -370,10 +369,10 @@ class Directory extends DAV\FSExt\Directory
 			return;
 		}
 		switch ($this->entries) {
-			case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
 	}
 
@@ -422,9 +421,9 @@ class Directory extends DAV\FSExt\Directory
 			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
-				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-				// 	case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-				// 	case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+				// 	case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+				// 	case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
 				// }
 				continue;
 			}
@@ -479,9 +478,9 @@ class Directory extends DAV\FSExt\Directory
 			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->server, $this->user, $this->pass), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
-				// 	case STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
-				// 	case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-				// 	case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->pretty_name());
+				// 	case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+				// 	case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
 				// }
 				continue;
 			}

@@ -21,6 +21,8 @@
 
 namespace SambaDAV\SMBClient;
 
+use \SambaDAV\SMB;
+
 class Parser
 {
 	private $fd = false;
@@ -100,7 +102,7 @@ class Parser
 	public function
 	getStatus ()
 	{
-		// Parses the smbclient output on stdout, returns STATUS_OK
+		// Parses the smbclient output on stdout, returns SMB::STATUS_OK
 		// if everything could be read without encountering errors
 		// (as parsed by getLine), else it returns the error code.
 		while (($line = $this->getLine()) !== false) {
@@ -108,7 +110,7 @@ class Parser
 				return $line[0];
 			}
 		}
-		return STATUS_OK;
+		return SMB::STATUS_OK;
 	}
 
 	public function
@@ -158,17 +160,17 @@ class Parser
 
 				case 'NT_STATUS_LOGON_FAILURE':
 				case 'NT_STATUS_ACCESS_DENIED':	// TODO: this can also mean "not writable"
-					return Array(STATUS_UNAUTHENTICATED);
+					return Array(SMB::STATUS_UNAUTHENTICATED);
 
 				case 'NT_STATUS_NO_SUCH_FILE':
 				case 'NT_STATUS_BAD_NETWORK_NAME':
 				case 'NT_STATUS_OBJECT_PATH_NOT_FOUND':
 				case 'NT_STATUS_OBJECT_NAME_NOT_FOUND':
-					return Array(STATUS_NOTFOUND);
+					return Array(SMB::STATUS_NOTFOUND);
 
 				// All other statuses, assume unauthenticated:
 				default:
-					return Array(STATUS_UNAUTHENTICATED);
+					return Array(SMB::STATUS_UNAUTHENTICATED);
 			}
 		}
 		return false;

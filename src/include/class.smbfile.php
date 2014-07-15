@@ -22,7 +22,6 @@
 namespace SambaDAV;
 
 require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'common.inc.php';
 require_once 'class.smb.php';
 require_once 'function.log.php';
 require_once 'streamfilter.md5.php';
@@ -70,15 +69,15 @@ class File extends DAV\FSExt\File
 	{
 		log_trace('setName "'.$this->pretty_name()."\" -> \"$name\"\n");
 		switch (SMB::rename($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $name)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->fname = $name;
 				return true;
 
-			case STATUS_NOTFOUND: $this->exc_notfound();
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden();
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound();
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden();
 		}
 	}
 
@@ -93,11 +92,11 @@ class File extends DAV\FSExt\File
 		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
 
 		switch (SMB::get($this->server, $this->share, $this->vpath, $this->fname, $this->proc)) {
-			case STATUS_OK: return $this->proc->getOutputStreamHandle();
-			case STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
-			case STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->proc = null; $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->proc = null; $this->exc_forbidden();
+			case SMB::STATUS_OK: return $this->proc->getOutputStreamHandle();
+			case SMB::STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->proc = null; $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->proc = null; $this->exc_forbidden();
 		}
 	}
 
@@ -105,14 +104,14 @@ class File extends DAV\FSExt\File
 	{
 		log_trace('put "'.$this->pretty_name()."\"\n");
 		switch (SMB::put($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $data, $md5)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				return ($md5 === NULL) ? NULL : "\"$md5\"";
 
-			case STATUS_NOTFOUND: $this->exc_notfound();
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden();
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound();
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden();
 		}
 	}
 
@@ -215,14 +214,14 @@ class File extends DAV\FSExt\File
 		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
 			switch (SMB::setMode($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname, $modeflag)) {
-				case STATUS_OK:
+				case SMB::STATUS_OK:
 					$invalidate = true;
 					continue;
 
-				case STATUS_NOTFOUND: $this->exc_notfound();
-				case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-				case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-				case STATUS_INVALID_NAME: $this->exc_forbidden();
+				case SMB::STATUS_NOTFOUND: $this->exc_notfound();
+				case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+				case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+				case SMB::STATUS_INVALID_NAME: $this->exc_forbidden();
 			}
 		}
 		if ($invalidate) {
@@ -237,14 +236,14 @@ class File extends DAV\FSExt\File
 	{
 		log_trace('delete "'.$this->pretty_name()."\"\n");
 		switch (SMB::rm($this->user, $this->pass, $this->server, $this->share, $this->vpath, $this->fname)) {
-			case STATUS_OK:
+			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				return true;
 
-			case STATUS_NOTFOUND: $this->exc_notfound();
-			case STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
-			case STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
-			case STATUS_INVALID_NAME: $this->exc_forbidden();
+			case SMB::STATUS_NOTFOUND: $this->exc_notfound();
+			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
+			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
+			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden();
 		}
 	}
 
