@@ -73,14 +73,14 @@ class Directory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if ($this->server === false) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new \SambaDAV\Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
+				$children[] = new Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
 		// If in root folder for given server, fetch all allowed shares for that server:
 		if ($this->share === false) {
 			foreach ($this->server_root_entries() as $entry) {
-				$children[] = new \SambaDAV\Directory($this->server, $entry, false, $this, 'D', $this->user, $this->pass);
+				$children[] = new Directory($this->server, $entry, false, $this, 'D', $this->user, $this->pass);
 			}
 			return $children;
 		}
@@ -105,7 +105,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->server === false) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new \SambaDAV\Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
+					return new Directory($entry[0], $entry[1], false, $this, 'D', $this->user, $this->pass);
 				}
 			}
 			$this->exc_notfound($name);
@@ -114,7 +114,7 @@ class Directory extends DAV\FSExt\Directory
 		// We have a server, but do we have a share?
 		if ($this->share === false) {
 			if (in_array($name, $this->server_root_entries())) {
-				return new \SambaDAV\Directory($this->server, $name, false, $this, 'D', $this->user, $this->pass);
+				return new Directory($this->server, $name, false, $this, 'D', $this->user, $this->pass);
 			}
 			$this->exc_notfound($name);
 			return false;
@@ -129,9 +129,9 @@ class Directory extends DAV\FSExt\Directory
 					continue;
 				}
 				if (strpos($entry[1], 'D') === false) {
-					return new \SambaDAV\File($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
+					return new File($this->server, $this->share, $this->vpath, $entry, $this, $this->user, $this->pass);
 				}
-				return new \SambaDAV\Directory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
+				return new Directory($this->server, $this->share, $this->vpath.'/'.$entry[0], $this, $entry[1], $this->user, $this->pass);
 			}
 		}
 		$this->exc_notfound($this->pretty_name().$name);

@@ -19,7 +19,9 @@
  *
  */
 
-ini_set('display_errors', 0);
+namespace SambaDAV;
+
+ini_set('display_errors', false);
 
 // Source this config file to get at the $enable_webfolders variable;
 // if this variable is not unambiguously true, then bail out immediately:
@@ -102,7 +104,7 @@ else {
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
 		if (LDAP_AUTH) {
-			$ldap = new \SambaDAV\LDAP();
+			$ldap = new LDAP();
 
 			if (!isset($share_userhome_ldap)) {
 				$share_userhome_ldap = false;
@@ -120,10 +122,10 @@ else {
 // Time-based throttling to prevent too-frequent rechecking;
 // Random-based throttling to prevent contention in the "available" second:
 if ((time() % 5) == 0 && rand(0, 9) == 8) {
-	\SambaDAV\Cache::clean();
+	Cache::clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new \SambaDAV\Directory(false, false, false, false, 'D', $user, $pass);
+$rootDir = new Directory(false, false, false, false, 'D', $user, $pass);
 
 // Pass LDAP userhome dir if available:
 if (isset($ldap) && $ldap->userhome !== false) {
@@ -180,7 +182,7 @@ $plugin->extensionMap['mpeg'] = 'video/mpeg';
 $server->addPlugin($plugin);
 
 // Custom plugin to add the nonstandard DAV:ishidden and DAV:isreadonly flags:
-$server->addPlugin(new \SambaDAV\MSPropertiesPlugin());
+$server->addPlugin(new MSPropertiesPlugin());
 
 // And off we go!
 $server->exec();
