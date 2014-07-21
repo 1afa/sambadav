@@ -135,13 +135,13 @@ class File extends DAV\FSExt\File
 			return $this->proc = null;
 		}
 		// Get the eTag by streaming the file and inserting an md5 streamfilter:
-		stream_filter_register('md5sum', 'md5sum_filter');
-		$md5_filter = stream_filter_append($fd, 'md5sum');
+		$filterOutput = new MD5FilterOutput();
+		stream_filter_register('md5sum', '\SambaDAV\MD5Filter');
+		$filter = stream_filter_append($fd, 'md5sum', STREAM_FILTER_READ, $filterOutput);
 		while (fread($fd, 5000000));
-		stream_filter_remove($md5_filter);
-		$md5 = md5s_get_hash();
+		stream_filter_remove($filter);
 		$this->proc = null;
-		return "\"$md5\"";
+		return sprintf('"%s"', $filterOutput->hash);
 	}
 
 	public function getContentType ()

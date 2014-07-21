@@ -1,6 +1,6 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
 /*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
+ * Copyright (C) 2013, 2014 Bokxing IT, http://www.bokxing-it.nl
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,32 +19,42 @@
  *
  */
 
-$hash = '';
+namespace SambaDAV;
 
-function md5s_get_hash ()
+// This is a dummy class that does nothing except hold the value of the hash.
+// We need this dummy class to save the final value of the hash when the filter
+// is done. The caller creates a new instance of this class and passes it as a
+// parameter to stream_filter_append. Because objects are passed by reference,
+// the filter can update the hash value, and the caller can read out the value
+// when the streaming is done. Saves us from using a global variable.
+
+class MD5FilterOutput
 {
-	global $hash;
-	return $hash;
+	public $hash = '';
 }
 
-class md5sum_filter extends php_user_filter
+class MD5Filter extends \php_user_filter
 {
 	private $ctx;
 
-	function onCreate ()
+	public function
+	onCreate ()
 	{
 		$this->ctx = hash_init('md5');
-		return TRUE;
+		return true;
 	}
 
-	function onClose ()
+	public function
+	onClose ()
 	{
-		global $hash;
-		$hash = hash_final($this->ctx);
-		return TRUE;
+		// $this->params points to an instance of MD5FilterOutput,
+		// owned by caller, that caller will use to read out the hash:
+		$this->params->hash = hash_final($this->ctx);
+		return true;
 	}
 
-	function filter ($in, $out, &$consumed, $closing)
+	public function
+	filter ($in, $out, &$consumed, $closing)
 	{
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			hash_update($this->ctx, $bucket->data);

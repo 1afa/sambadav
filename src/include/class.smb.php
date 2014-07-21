@@ -138,11 +138,12 @@ class SMB
 		// $data can be a string or a resource; must deal with both:
 		if (is_resource($data)) {
 			// Append md5summing streamfilter to input stream:
-			stream_filter_register('md5sum', 'md5sum_filter');
-			$md5_filter = stream_filter_append($data, 'md5sum');
+			$filterOutput = new MD5FilterOutput();
+			stream_filter_register('md5sum', '\SambaDAV\MD5Filter');
+			$filter = stream_filter_append($data, 'md5sum', STREAM_FILTER_READ, $filterOutput);
 			stream_copy_to_stream($data, $proc->fd[4]);
-			stream_filter_remove($md5_filter);
-			$md5 = md5s_get_hash();
+			stream_filter_remove($filter);
+			$md5 = $filterOutput->hash;
 		}
 		else {
 			if (fwrite($proc->fd[4], $data) === false) {

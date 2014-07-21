@@ -1,3 +1,4 @@
+- MD5 streamfilter: place in own class, avoid global variable;
 - Login form: generate from template file in its own class;
 - Use Composer to install SabreDAV and other dependencies;
 - Rework all global logging functions into a static Log class;
