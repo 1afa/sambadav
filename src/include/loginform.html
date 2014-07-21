@@ -1,31 +1,8 @@
-<?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
-
-function print_login_form ($baseuri)
-{
-	?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head>
     <title>SambaDAV Login</title>
-    <link rel="stylesheet" type="text/css" href="<?php echo $baseuri ?>style.css"/>
+    <link rel="stylesheet" type="text/css" href="{BASEURI}style.css"/>
     <style type="text/css">
       body {
         font-family: sans-serif;
@@ -89,7 +66,7 @@ function print_login_form ($baseuri)
 			}
 		}
 		// Show spinner:
-		d.innerHTML = '<img src="<?php echo $baseuri ?>spinner.gif" alt=""/>';
+		d.innerHTML = '<img src="{BASEURI}spinner.gif" alt=""/>';
 
 		ajax.open('GET', cleanloc, true, u.value, p.value);
 		ajax.send(null);
@@ -112,10 +89,7 @@ function print_login_form ($baseuri)
           <td><input type="submit"/></td>
         </tr>
       </table>
-      <center><img src="<?php echo $baseuri ?>logo-sambadav.png" alt="SambaDAV"/></center>
+      <center><img src="{BASEURI}logo-sambadav.png" alt="SambaDAV"/></center>
     </form>
   </body>
 </html>
-<?php
-
-}

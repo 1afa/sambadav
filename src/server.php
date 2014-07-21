@@ -42,7 +42,7 @@ require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
 require_once 'include/class.cache.php';
 require_once 'include/plugin.msproperties.php';
-require_once 'include/function.loginform.php';
+require_once 'include/class.loginform.php';
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:
@@ -87,7 +87,8 @@ else {
 	// to make the browser flush its cache:
 	if (isset($_GET['logout']) || (ANONYMOUS_ALLOW === false && ($user === false || $pass === false))) {
 		$auth->requireLogin();
-		print_login_form($baseuri);
+		$loginForm = new LoginForm($baseuri);
+		echo $loginForm->getBody();
 		return;
 	}
 	// If we allow anonymous logins, and we did not get all creds, skip authorization:
@@ -113,7 +114,8 @@ else {
 			if ($ldap->verify($user, $pass, $ldap_groups, $share_userhome_ldap) === false) {
 				sleep(2);
 				$auth->requireLogin();
-				print_login_form($baseuri);
+				$loginForm = new LoginForm($baseuri);
+				echo $loginForm->getBody();
 				return;
 			}
 		}

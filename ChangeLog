@@ -1,3 +1,4 @@
+- Login form: generate from template file in its own class;
 - Use Composer to install SabreDAV and other dependencies;
 - Rework all global logging functions into a static Log class;
 - Rework all loose smb_ functions into a static SMB class;
