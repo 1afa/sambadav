@@ -37,13 +37,20 @@ use Sabre\HTTP;
 
 include __DIR__ . '/vendor/autoload.php';
 
-require_once 'include/class.ldap.php';
-require_once 'include/class.smbdirectory.php';
-require_once 'include/class.smbfile.php';
-require_once 'include/class.cache.php';
-require_once 'include/plugin.msproperties.php';
-require_once 'include/plugin.browser.php';
-require_once 'include/class.loginform.php';
+include './config/config.inc.php';
+
+// Dynamic shares config; these are optional includes:
+@include_once __DIR__ . '/config/share_root.inc.php';
+@include_once __DIR__ . '/config/share_archives.inc.php';
+@include_once __DIR__ . '/config/share_extra.inc.php';
+@include_once __DIR__ . '/config/share_userhomes.inc.php';
+
+// If share variables not sourced, set default (empty) value:
+if (!isset($share_root) || !$share_root) $share_root = array();
+if (!isset($share_extra) || !$share_extra) $share_extra = array();
+if (!isset($share_archives) || !$share_archives) $share_archives = array();
+
+$share_root = array_merge($share_root, $share_archives);
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:

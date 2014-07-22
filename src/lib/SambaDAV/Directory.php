@@ -21,25 +21,6 @@
 
 namespace SambaDAV;
 
-require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'class.smb.php';
-require_once 'class.log.php';
-require_once 'class.cache.php';
-require_once 'class.propflags.php';
-
-// Dynamic shares config; these are optional includes:
-@include_once dirname(dirname(__FILE__)).'/config/share_root.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_archives.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_extra.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_userhomes.inc.php';
-
-// If share variables not sourced, set default (empty) value:
-if (!isset($share_root) || !$share_root) $share_root = array();
-if (!isset($share_extra) || !$share_extra) $share_extra = array();
-if (!isset($share_archives) || !$share_archives) $share_archives = array();
-
-$share_root = array_merge($share_root, $share_archives);
-
 use Sabre\DAV;
 
 class Directory extends DAV\FSExt\Directory

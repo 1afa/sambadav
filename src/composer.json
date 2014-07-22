@@ -11,5 +11,10 @@
 			"role" : "Developer"
 		}
 	],
+	"autoload" : {
+		"psr-0" : {
+			"SambaDAV" : "lib/"
+		}
+	},
 	"minimum-stability" : "stable"
 }

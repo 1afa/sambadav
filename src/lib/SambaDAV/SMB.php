@@ -21,12 +21,6 @@
 
 namespace SambaDAV;
 
-require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'class.log.php';
-require_once 'streamfilter.md5.php';
-require_once 'class.smbprocess.php';
-require_once 'class.smbparser.php';
-
 class SMB
 {
 	const STATUS_OK			= 0;
