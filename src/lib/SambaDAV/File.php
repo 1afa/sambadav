@@ -194,31 +194,20 @@ class File extends DAV\FSExt\File
 		$new_flags = clone $this->flags;
 		$invalidate = false;
 
-		foreach ($mutations as $key => $val) {
+		foreach ($mutations as $key => $value) {
 			switch ($key) {
-				case '{urn:schemas-microsoft-com:}Win32CreationTime':
-				case '{urn:schemas-microsoft-com:}Win32LastAccessTime':
-				case '{urn:schemas-microsoft-com:}Win32LastModifiedTime':
-					// Silently ignore these;
-					// smbclient has no 'touch' command or similar:
-					break;
-
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
 					// Decode into array of flags:
-					$new_flags->fromWin32($val);
+					$new_flags->fromWin32($value);
 					break;
 
 				case '{DAV:}ishidden':
-					$new_flags->set('H', (bool)$val);
+					$new_flags->set('H', (bool)$value);
 					break;
 
 				case '{DAV:}isreadonly':
-					$new_flags->set('R', (bool)$val);
-					break;
-
-				default:
-					// TODO: logging!
+					$new_flags->set('R', (bool)$value);
 					break;
 			}
 		}

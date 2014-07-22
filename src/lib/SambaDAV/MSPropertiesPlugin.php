@@ -26,30 +26,51 @@ use Sabre\DAV;
 
 class MSPropertiesPlugin extends DAV\ServerPlugin
 {
-	public function initialize (DAV\Server $server)
+	protected $server;
+
+	public function
+	initialize (DAV\Server $server)
 	{
-		$server->subscribeEvent('afterGetProperties', array($this, 'afterGetProperties'));
+		$this->server = $server;
+		$this->server->on('propFind', [ $this, 'propFind' ]);
+		$this->server->on('propPatch', [ $this, 'propPatch' ]);
 	}
 
-	function afterGetProperties ($uri, &$properties, \Sabre\DAV\INode $node)
+	public function
+	propFind (DAV\PropFind $propFind, DAV\INode $node)
 	{
+		// Add extra Windows properties to the node:
 		if (method_exists($node, 'getIsHidden')) {
-			$this->addProp($properties, '{DAV:}ishidden', ($node->getIsHidden() ? '1' : '0'));
+			$propFind->set('{DAV:}ishidden', ($node->getIsHidden() ? '1' : '0'));
 		}
 		if (method_exists($node, 'getIsReadonly')) {
-			$this->addProp($properties, '{DAV:}isreadonly', ($node->getIsReadonly() ? '1' : '0'));
+			$propFind->set('{DAV:}isreadonly', ($node->getIsReadonly() ? '1' : '0'));
 		}
 		if (method_exists($node, 'getWin32Props')) {
-			$this->addProp($properties, '{urn:schemas-microsoft-com:}Win32FileAttributes', $node->getWin32Props());
+			$propFind->set('{urn:schemas-microsoft-com:}Win32FileAttributes', $node->getWin32Props());
 		}
-		return true;
 	}
 
-	function addProp (&$properties, $key, $val)
+	public function
+	propPatch ($path, DAV\PropPatch $propPatch)
 	{
-		if (isset($properties[404][$key])) {
-			unset($properties[404][$key]);
+		$node = $this->server->tree->getNodeForPath($path);
+
+		// The File object is the only thing we can change properties on:
+		if (!($node instanceof \SambaDAV\File)) {
+			return;
 		}
-		$properties[200][$key] = $val;
+		// These properties are silently ignored for now;
+		// smbclient has no 'touch' command; for documentation purposes:
+		//  {urn:schemas-microsoft-com:}Win32CreationTime
+		//  {urn:schemas-microsoft-com:}Win32LastAccessTime
+		//  {urn:schemas-microsoft-com:}Win32LastModifiedTime
+
+		$handled = [ '{DAV:}ishidden'
+		           , '{DAV:}isreadonly'
+		           , '{urn:schemas-microsoft-com:}Win32FileAttributes'
+		           ] ;
+
+		$propPatch->handle($handled, [ $node, 'updateProperties' ]);
 	}
 }
