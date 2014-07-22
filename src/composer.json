@@ -1,7 +1,7 @@
 {
 	"name" : "bokxing-it/sambadav",
 	"require" : {
-		"sabre/dav" : "1.8.6"
+		"sabre/dav" : "~1.8"
 	},
 	"license" : "agpl",
 	"authors" : [
