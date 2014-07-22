@@ -32,8 +32,9 @@ $config->load(__DIR__ . '/config');
 
 // if this variable is not unambiguously true, bail out immediately:
 if ($config->enabled !== true) {
-	header('HTTP/1.1 404 Not Found');
-	die();
+	$response = new HTTP\Response(404);
+	HTTP\Sapi::sendResponse($response);
+	return;
 }
 
 // The base URI is the SambaDAV root dir location on the server.

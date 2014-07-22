@@ -36,7 +36,7 @@ class BrowserPlugin extends DAV\Browser\Plugin
 	generateDirectoryIndex ($path)
 	{
 		$version = (DAV\Server::$exposeVersion)
-			? ' ' . DAV\Version::VERSION ."-". DAV\Version::STABILITY
+			? ' ' . DAV\Version::VERSION
 			: '';
 
 		$parent = $this->server->tree->getNodeForPath($path);

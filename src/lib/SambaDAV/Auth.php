@@ -49,8 +49,11 @@ class Auth
 			$this->anonymous = true;
 			return true;
 		}
-		$auth = new HTTP\BasicAuth();
-		$auth->setRealm('Web Folders');
+		$sapi = new HTTP\Sapi();
+		$response = new HTTP\Response();
+		$request = $sapi->getRequest();
+
+		$auth = new HTTP\Auth\Basic('Web Folders', $request, $response);
 
 		// If no basic auth creds set, but the variables "user" and "pass" were
 		// posted to the page (e.g. from a/the login form), substitute those:
@@ -66,7 +69,7 @@ class Auth
 				$_SERVER['REQUEST_METHOD'] = 'GET';
 			}
 		}
-		list($this->user, $this->pass) = $auth->getUserPass();
+		list($this->user, $this->pass) = $auth->getCredentials();
 
 		if ($this->user === false || $this->user === '') $this->user = null;
 		if ($this->pass === false || $this->pass === '') $this->pass = null;
@@ -82,12 +85,12 @@ class Auth
 			// Otherwise, if you're tagged with 'logout', make sure
 			// the authentication is refused, to make the browser
 			// flush its cache:
-			$this->showLoginForm($auth);
+			$this->showLoginForm($auth, $response);
 			return false;
 		}
 		if ($this->checkAuth() === false) {
 			sleep(2);
-			$this->showLoginForm($auth);
+			$this->showLoginForm($auth, $response);
 			return false;
 		}
 		return true;
@@ -179,11 +182,12 @@ class Auth
 	}
 
 	private function
-	showLoginForm ($auth)
+	showLoginForm ($auth, $response)
 	{
 		$auth->requireLogin();
 		$loginForm = new LoginForm($this->baseuri);
-		echo $loginForm->getBody();
+		$response->setBody($loginForm->getBody());
+		HTTP\Sapi::sendResponse($response);
 	}
 
 	public function
