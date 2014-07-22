@@ -143,7 +143,7 @@ cd /tmp
 tar xvf /path/to/sambadav-0.2.1.tar.gz
 ```
 
-If you look inside the unpacked tarball, you will see three toplevel directories:
+If you look inside the unpacked tarball, you will see two toplevel directories:
 
 - `img/` contains the SVG files for the file and directory icons, and the
   Makefile to generate the PNGs;
@@ -151,13 +151,6 @@ If you look inside the unpacked tarball, you will see three toplevel directories
 - `src/` contains the application source code, the part that should be copied
   wholesale to a directory on the web server (for which this guide will assume
   `/var/www/htdocs/webfolders`);
-
-- `patch/` contains a series of patches for SabreDAV's Browser plugin, to make
-  the web interface more pleasant to use. Among other things, we patch the
-  Browser plugin to be amenable to styling through the `style.css` stylesheet,
-  we sort the file listing properly, we use custom icons for files and
-  directories, and we move table of actions (update/delete) to the top of the
-  web page.
 
 Copy everything in `src/` to the webserver folder:
 
@@ -174,15 +167,6 @@ and unzip it in `/var/www/htdocs/webfolders/lib`:
 ```sh
 cd /var/www/htdocs/webfolders/lib
 unzip /path/to/SabreDAV-1.8.6.zip
-```
-
-Apply the patches from the unpacked SambaDAV tarball:
-
-```sh
-cd /var/www/htdocs/webfolders/lib/SabreDAV
-patch -p0 < /tmp/sambadav-0.2.1/patch/01-sabredav-1.8.6-better-html-listing.patch
-patch -p0 < /tmp/sambadav-0.2.1/patch/02-sabredav-1.8.6-sort-filenames.patch
-patch -p0 < /tmp/sambadav-0.2.1/patch/03-sabredav-1.8.6-actions-table.patch
 ```
 
 The following directions should be made writable by the user the webserver runs

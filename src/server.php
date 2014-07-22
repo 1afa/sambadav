@@ -42,6 +42,7 @@ require_once 'include/class.smbdirectory.php';
 require_once 'include/class.smbfile.php';
 require_once 'include/class.cache.php';
 require_once 'include/plugin.msproperties.php';
+require_once 'include/plugin.browser.php';
 require_once 'include/class.loginform.php';
 
 // The base URI is the SambaDAV root dir location on the server.
@@ -150,7 +151,7 @@ $lockPlugin = new DAV\Locks\Plugin($lockBackend);
 $server->addPlugin($lockPlugin);
 
 // Browser plugin, for plain directory listings:
-$plugin = new \Sabre\DAV\Browser\Plugin();
+$plugin = new BrowserPlugin();
 $server->addPlugin($plugin);
 
 // Content-type plugin:
