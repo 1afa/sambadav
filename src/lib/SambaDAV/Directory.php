@@ -21,25 +21,6 @@
 
 namespace SambaDAV;
 
-require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'class.smb.php';
-require_once 'class.log.php';
-require_once 'class.cache.php';
-require_once 'class.propflags.php';
-
-// Dynamic shares config; these are optional includes:
-@include_once dirname(dirname(__FILE__)).'/config/share_root.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_archives.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_extra.inc.php';
-@include_once dirname(dirname(__FILE__)).'/config/share_userhomes.inc.php';
-
-// If share variables not sourced, set default (empty) value:
-if (!isset($share_root) || !$share_root) $share_root = array();
-if (!isset($share_extra) || !$share_extra) $share_extra = array();
-if (!isset($share_archives) || !$share_archives) $share_archives = array();
-
-$share_root = array_merge($share_root, $share_archives);
-
 use Sabre\DAV;
 
 class Directory extends DAV\FSExt\Directory
@@ -398,14 +379,11 @@ class Directory extends DAV\FSExt\Directory
 
 	private function global_root_entries ()
 	{
-		global $share_root;
-		global $share_extra;
-
 		// structure:
 		// $entries = array('name-of-root-folder' => array('server', 'share-on-that-server'))
 		$entries = array();
 
-		foreach ($share_root as $entry)
+		foreach (Config::$share_root as $entry)
 		{
 			$server = (isset($entry[0])) ? $entry[0] : false;
 			$share  = (isset($entry[1])) ? $entry[1] : false;
@@ -432,7 +410,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 		}
 		// Servers from $shares_extra get a folder with the name of the *server*:
-		foreach ($share_extra as $entry) {
+		foreach (Config::$share_extra as $entry) {
 			$entries[$entry[0]] = array($entry[0], false);
 		}
 		// The user's home directory gets a folder with the name of the *user*:
@@ -450,21 +428,18 @@ class Directory extends DAV\FSExt\Directory
 
 	private function server_root_entries ()
 	{
-		global $share_root;
-		global $share_extra;
-
 		$entries = array();
 
 		// Shares in the global root belonging to this server
 		// also show up in the server's own subdir:
-		foreach ($share_root as $entry) {
+		foreach (Config::$share_root as $entry) {
 			list($server, $share) = $entry;
 			if ($server != $this->server) {
 				continue;
 			}
 			$entries[$share] = 1;
 		}
-		foreach ($share_extra as $entry) {
+		foreach (Config::$share_extra as $entry) {
 			list($server, $share) = $entry;
 			if ($server != $this->server) {
 				continue;

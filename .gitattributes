@@ -5,11 +5,11 @@
 # These .gitignore files ensure the (otherwise empty) directory stays in
 # the repo, but these placeholder files shouldn't be exported themselves:
 src/data/.gitignore export-ignore
-src/lib/.gitignore export-ignore
 src/log/.gitignore export-ignore
 
 # These files are subject to keyword expansion by git-archive:
 src/*.php export-subst
 src/*.css export-subst
 src/config/*.php export-subst
-src/include/*.php export-subst
+src/lib/SambaDAV/*.php export-subst
+src/lib/SambaDAV/SMBClient/*.php export-subst

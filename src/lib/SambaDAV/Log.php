@@ -49,7 +49,7 @@ class Log
 	private static function
 	initFilename ()
 	{
-		self::$filename = strftime(dirname(dirname(__FILE__)).'/log/trace-%Y-%m-%d.log');
+		self::$filename = strftime(dirname(dirname(dirname(__FILE__))).'/log/trace-%Y-%m-%d.log');
 	}
 
 	private static function

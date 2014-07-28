@@ -21,13 +21,6 @@
 
 namespace SambaDAV;
 
-require_once dirname(dirname(__FILE__)).'/config/config.inc.php';
-require_once 'class.smb.php';
-require_once 'class.log.php';
-require_once 'streamfilter.md5.php';
-require_once 'class.propflags.php';
-require_once 'class.smbprocess.php';
-
 use Sabre\DAV;
 
 class File extends DAV\FSExt\File

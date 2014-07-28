@@ -44,6 +44,6 @@ class LoginForm
 			return null;
 		}
 		// Substitute {BASEURI}:
-		return str_replace('{BASEURI}', $baseuri, $contents);
+		return str_replace('{BASEURI}', $this->baseuri, $contents);
 	}
 }

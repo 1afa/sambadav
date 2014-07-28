@@ -1,48 +1,42 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV;
 
 ini_set('display_errors', false);
-
-// Source this config file to get at the $enable_webfolders variable;
-// if this variable is not unambiguously true, then bail out immediately:
-include_once('config/share_userhomes.inc.php');
-
-if (!isset($enable_webfolders) || $enable_webfolders !== true) {
-	header('HTTP/1.1 404 Not Found');
-	die();
-}
 
 use Sabre\DAV;
 use Sabre\HTTP;
 
 include __DIR__ . '/vendor/autoload.php';
 
-require_once 'include/class.ldap.php';
-require_once 'include/class.smbdirectory.php';
-require_once 'include/class.smbfile.php';
-require_once 'include/class.cache.php';
-require_once 'include/plugin.msproperties.php';
-require_once 'include/class.loginform.php';
+// Load the main config file:
+include __DIR__ . '/config/config.inc.php';
+
+// Load the shares config into the static Config class:
+Config::load(__DIR__ . '/config');
+
+// if this variable is not unambiguously true, bail out immediately:
+if (Config::$enabled !== true) {
+	header('HTTP/1.1 404 Not Found');
+	die();
+}
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:
@@ -108,10 +102,10 @@ else {
 		if (LDAP_AUTH) {
 			$ldap = new LDAP();
 
-			if (!isset($share_userhome_ldap)) {
-				$share_userhome_ldap = false;
+			if (!isset(Config::$share_userhome_ldap)) {
+				Config::$share_userhome_ldap = false;
 			}
-			if ($ldap->verify($user, $pass, $ldap_groups, $share_userhome_ldap) === false) {
+			if ($ldap->verify($user, $pass, $ldap_groups, Config::$share_userhome_ldap) === false) {
 				sleep(2);
 				$auth->requireLogin();
 				$loginForm = new LoginForm($baseuri);
@@ -135,8 +129,8 @@ if (isset($ldap) && $ldap->userhome !== false) {
 	$rootDir->setUserhome($ldap->userhome);
 }
 // Otherwise the userhome server if defined:
-else if ($user !== false && isset($share_userhomes) && $share_userhomes) {
-	$rootDir->setUserhome(sprintf('\\\\%s\%s', $share_userhomes, $user));
+else if ($user !== false && isset(Config::$share_userhomes) && Config::$share_userhomes) {
+	$rootDir->setUserhome(sprintf('\\\\%s\%s', Config::$share_userhomes, $user));
 }
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);
@@ -150,7 +144,7 @@ $lockPlugin = new DAV\Locks\Plugin($lockBackend);
 $server->addPlugin($lockPlugin);
 
 // Browser plugin, for plain directory listings:
-$plugin = new \Sabre\DAV\Browser\Plugin();
+$plugin = new BrowserPlugin();
 $server->addPlugin($plugin);
 
 // Content-type plugin:

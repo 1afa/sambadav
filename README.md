@@ -53,8 +53,7 @@ as if the request was done on the command line. The resulting output (or
 bytestream) is parsed by SambaDAV to a WebDAV response (such as "here's the
 file", "file not found", or "could not authenticate") and sent back to the
 user. The WebDAV protocol is handled by
-[SabreDAV](http://code.google.com/p/sabredav/), a WebDAV server library written
-in PHP.
+[SabreDAV](http://sabre.io/dav), a WebDAV server library written in PHP.
 
 SambaDAV is glue code, which:
 
@@ -143,7 +142,7 @@ cd /tmp
 tar xvf /path/to/sambadav-0.2.1.tar.gz
 ```
 
-If you look inside the unpacked tarball, you will see three toplevel directories:
+If you look inside the unpacked tarball, you will see two toplevel directories:
 
 - `img/` contains the SVG files for the file and directory icons, and the
   Makefile to generate the PNGs;
@@ -152,37 +151,19 @@ If you look inside the unpacked tarball, you will see three toplevel directories
   wholesale to a directory on the web server (for which this guide will assume
   `/var/www/htdocs/webfolders`);
 
-- `patch/` contains a series of patches for SabreDAV's Browser plugin, to make
-  the web interface more pleasant to use. Among other things, we patch the
-  Browser plugin to be amenable to styling through the `style.css` stylesheet,
-  we sort the file listing properly, we use custom icons for files and
-  directories, and we move table of actions (update/delete) to the top of the
-  web page.
-
 Copy everything in `src/` to the webserver folder:
 
 ```sh
 cp -ar /tmp/sambadav-0.2.1/src /var/www/htdocs/webfolders
 ```
 
-Since SambaDAV is a frontend to [SabreDAV](http://code.google.com/p/sabredav/),
-you will also need to download and install that package. SambaDAV is written
-against the SabreDAV 1.8 API and has been tested with SabreDAV-1.8.6. Download
-the [SabreDAV-1.8.6 zipfile](https://code.google.com/p/sabredav/downloads/detail?name=SabreDAV-1.8.6.zip)
-and unzip it in `/var/www/htdocs/webfolders/lib`:
+SambaDAV uses [SabreDAV](http://sabre.io/dav) as a backend server.
+Installing SabreDAV is done using [Composer](http://getcomposer.org).
+After downloading and installing Composer, run these commands to download the dependencies:
 
 ```sh
-cd /var/www/htdocs/webfolders/lib
-unzip /path/to/SabreDAV-1.8.6.zip
-```
-
-Apply the patches from the unpacked SambaDAV tarball:
-
-```sh
-cd /var/www/htdocs/webfolders/lib/SabreDAV
-patch -p0 < /tmp/sambadav-0.2.1/patch/01-sabredav-1.8.6-better-html-listing.patch
-patch -p0 < /tmp/sambadav-0.2.1/patch/02-sabredav-1.8.6-sort-filenames.patch
-patch -p0 < /tmp/sambadav-0.2.1/patch/03-sabredav-1.8.6-actions-table.patch
+# cd /var/www/htdocs/webfolders
+# composer install
 ```
 
 The following directions should be made writable by the user the webserver runs
@@ -609,7 +590,7 @@ snappy browsing experience is an easy fix:
 
 Try again and you should be able to connect and browse at normal speeds.
 
-More information can be found in the [SabreDAV wiki](http://code.google.com/p/sabredav/w/list?q=label:Clients).
+More information can be found in the [SabreDAV wiki](http://sabre.io/dav/clients).
 
 
 ## Security considerations

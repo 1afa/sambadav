@@ -1,7 +1,7 @@
 {
 	"name" : "bokxing-it/sambadav",
 	"require" : {
-		"sabre/dav" : "1.8.6"
+		"sabre/dav" : "~1.8"
 	},
 	"license" : "agpl",
 	"authors" : [
@@ -11,5 +11,10 @@
 			"role" : "Developer"
 		}
 	],
+	"autoload" : {
+		"psr-0" : {
+			"SambaDAV" : "lib/"
+		}
+	},
 	"minimum-stability" : "stable"
 }
