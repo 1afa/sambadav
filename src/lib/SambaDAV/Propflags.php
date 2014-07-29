@@ -26,22 +26,21 @@ class Propflags
 	// These flag letters are taken from /source3/client/client.c in the
 	// Samba source tarball, function attr_str(). These are the flags we
 	// can theoretically expect to see in smbclient's `ls` output.
-	// NB: the 'N' flag occurs twice in the smbclient source, but the
-	// NORMAL variant is never shown, so we interpret 'N' to always stand
-	// for NONINDEXED.
+	// NB: the 'N' flag occurs twice in the smbclient source, but we
+	// interpret 'N' to always stand for NORMAL, based on actual listings.
 	private $flags = array
 		( 'R' => 0	// FILE_ATTRIBUTE_READONLY
 		, 'H' => 0	// FILE_ATTRIBUTE_HIDDEN
 		, 'S' => 0	// FILE_ATTRIBUTE_SYSTEM
 		, 'D' => 0	// FILE_ATTRIBUTE_DIRECTORY
 		, 'A' => 0	// FILE_ATTRIBUTE_ARCHIVE
-	//	, 'N' => 0	// FILE_ATTRIBUTE_NORMAL
+		, 'N' => 0	// FILE_ATTRIBUTE_NORMAL
 		, 'T' => 0	// FILE_ATTRIBUTE_TEMPORARY
 		, 's' => 0	// FILE_ATTRIBUTE_SPARSE
 		, 'r' => 0	// FILE_ATTRIBUTE_REPARSE_POINT
 		, 'C' => 0	// FILE_ATTRIBUTE_COMPRESSED
 		, 'O' => 0	// FILE_ATTRIBUTE_OFFLINE
-		, 'N' => 0	// FILE_ATTRIBUTE_NONINDEXED
+	//	, 'N' => 0	// FILE_ATTRIBUTE_NONINDEXED
 		, 'E' => 0	// FILE_ATTRIBUTE_ENCRYPTED
 		) ;
 
@@ -53,13 +52,13 @@ class Propflags
 		, 'S' => 0x0004
 		, 'D' => 0x0010
 		, 'A' => 0x0020
-	//	, 'N' => 0x0080 // Skip the NORMAL flag: if we see an N, it always stands for NONINDEXED.
+		, 'N' => 0x0080
 		, 'T' => 0x0100
 		, 's' => 0x0200
 		, 'r' => 0x0400
 		, 'C' => 0x0800
 		, 'O' => 0x1000
-		, 'N' => 0x2000
+	//	, 'N' => 0x2000	// Skip the NONINDEXED flag: if we see an N, it always stands for NORMAL.
 		, 'E' => 0x4000
 		) ;
 
@@ -79,7 +78,8 @@ class Propflags
 		foreach (array_keys($this->flags) as $flag) {
 			$this->flags[$flag] = ($flags & $this->bitmask[$flag]) ? 1 : 0;
 		}
-		return $this->init = true;
+		$this->updateNormal();
+		$this->init = true;
 	}
 
 	public function to_win32 ()
@@ -94,8 +94,7 @@ class Propflags
 		foreach (array_keys($this->flags) as $flag) {
 			if ($this->flags[$flag]) $msflags |= $this->bitmask[$flag];
 		}
-		// If no flags are set, return the special 'NORMAL' string:
-		return ($msflags === 0) ? '00000080' : sprintf('%08x', $msflags);
+		return sprintf('%08x', $msflags);
 	}
 
 	public function diff ($that)
@@ -127,6 +126,7 @@ class Propflags
 	public function set ($flag, $val)
 	{
 		$this->flags[$flag] = ((int)$val) ? 1 : 0;
+		$this->updateNormal();
 		$this->init = true;
 	}
 
@@ -142,6 +142,28 @@ class Propflags
 		foreach (array_keys($this->flags) as $flag) {
 			$this->flags[$flag] = (strpos($smbflags, $flag) === false) ? 0 : 1;
 		}
-		return $this->init = true;
+		$this->updateNormal();
+		$this->init = true;
+	}
+
+	private function updateNormal ()
+	{
+		// The N (NORMAL) flag can only be set if no other flags are set:
+		if ($this->flags['N'] === 1) {
+			foreach ($this->flags as $flag => $value) {
+				if ($flag !== 'N' && $value === 1) {
+					$this->flags['N'] = 0;
+					break;
+				}
+			}
+			return;
+		}
+		// If no flags are set, ensure that N is set:
+		foreach ($this->flags as $flag => $value) {
+			if ($value === 1) {
+				return;
+			}
+		}
+		$this->flags['N'] = 1;
 	}
 }

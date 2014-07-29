@@ -1,3 +1,4 @@
+- smbclient: honor the 'N' flag when encountered for NORMAL files;
 - Show actual server and share in title of Browser plugin, not webserver path;
 - Use new URI class for handling URI's, remove manual string manipulations;
 - Move all of SambaDAV to a PSR-0 compliant dir structure;
