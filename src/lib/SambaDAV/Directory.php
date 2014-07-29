@@ -403,14 +403,19 @@ class Directory extends DAV\FSExt\Directory
 		// Shares in the global root belonging to this server
 		// also show up in the server's own subdir:
 		foreach (Config::$share_root as $entry) {
-			list($server, $share) = $entry;
+			$server = (isset($entry[0])) ? $entry[0] : null;
+			$share = (isset($entry[1])) ? $entry[1] : null;
 			if ($server != $this->uri->server()) {
+				continue;
+			}
+			if ($share === false || $share === null || $share === '') {
 				continue;
 			}
 			$entries[$share] = 1;
 		}
 		foreach (Config::$share_extra as $entry) {
-			list($server, $share) = $entry;
+			$server = (isset($entry[0])) ? $entry[0] : null;
+			$share = (isset($entry[1])) ? $entry[1] : null;
 			if ($server != $this->uri->server()) {
 				continue;
 			}
