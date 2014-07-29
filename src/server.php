@@ -122,15 +122,15 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	Cache::clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new Directory(false, false, false, false, 'D', $user, $pass);
+$rootDir = new Directory(new URI(), null, 'D', $user, $pass);
 
 // Pass LDAP userhome dir if available:
 if (isset($ldap) && $ldap->userhome !== false) {
-	$rootDir->setUserhome($ldap->userhome);
+	$rootDir->setUserhome(new URI($ldap->userhome));
 }
 // Otherwise the userhome server if defined:
 else if ($user !== false && isset(Config::$share_userhomes) && Config::$share_userhomes) {
-	$rootDir->setUserhome(sprintf('\\\\%s\%s', Config::$share_userhomes, $user));
+	$rootDir->setUserhome(new URI(Config::$share_userhomes, $user));
 }
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);

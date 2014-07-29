@@ -30,9 +30,9 @@ class SMB
 	const STATUS_SMBCLIENT_ERROR	= 4;
 
 	public static function
-	getShares ($server, $user, $pass)
+	getShares ($user, $pass, URI $uri)
 	{
-		$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
+		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, false) === false) {
@@ -43,15 +43,15 @@ class SMB
 	}
 
 	public static function
-	ls ($user, $pass, $server, $share, $path)
+	ls ($user, $pass, URI $uri)
 	{
-		Log::trace("SMB::ls \"//$server/$share$path\"\n");
+		Log::trace("SMB::ls '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, 'ls');
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->path(), 'ls');
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
@@ -62,12 +62,12 @@ class SMB
 	}
 
 	public static function
-	du ($user, $pass, $server, $share)
+	du ($user, $pass, URI $uri)
 	{
-		Log::trace("SMB::du \"//$server/$share\"\n");
+		Log::trace("SMB::du '%s'\n", $uri->uriFull());
 
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd('/', 'du');
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->path(), 'du');
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
@@ -78,18 +78,15 @@ class SMB
 	}
 
 	public static function
-	get ($server, $share, $path, $file, $proc)
+	get (URI $uri, $proc)
 	{
-		Log::trace("SMB::get \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::get '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		if (self::checkFilename($file) === false) {
-			return self::STATUS_INVALID_NAME;
-		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, "get \"$file\" /proc/self/fd/5");
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->parentDir(), sprintf('get "%s" /proc/self/fd/5', $uri->name()));
 
 		// NB: because we want to return an open file handle, the caller needs
 		// to supply the Process class. Otherwise the proc and the fds are
@@ -104,18 +101,15 @@ class SMB
 	}
 
 	public static function
-	put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
+	put ($user, $pass, URI $uri, $data, &$md5)
 	{
-		Log::trace("SMB::put \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::put '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		if (self::checkFilename($file) === false) {
-			return self::STATUS_INVALID_NAME;
-		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, "put /proc/self/fd/4 \"$file\"");
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->parentDir(), sprintf('put /proc/self/fd/4 "%s"', $uri->name()));
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
 		if ($proc->open($args, $scmd) === false) {
@@ -151,17 +145,17 @@ class SMB
 	}
 
 	private static function
-	cmdSimple ($user, $pass, $server, $share, $path, $cmd)
+	cmdSimple ($user, $pass, URI $uri, $path, $cmd)
 	{
 		// A helper function that sends a simple (silent)
 		// command to smbclient and reports the result status.
 
-		Log::trace("SMB::cmdSimple: \"//$server/$share$path\": $cmd\n");
+		Log::trace("SMB::cmdSimple: '%s' '%s'\n", $cmd, $path);
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		$args = escapeshellarg("//$server/$share");
+		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($path, $cmd);
 		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
 
@@ -183,81 +177,56 @@ class SMB
 		// and avoids the pitfalls associated with shell escaping. The code
 		// paths taken internally by smbclient are virtually identical anyway.
 
-		return "cd \"$path\"\n$cmd";
-	}
-
-	private static function
-	checkFilename ($filename)
-	{
-		// Windows filenames cannot contain " * : < > ? \ / |
-		// or characters 1..31. Also exclude \0 as a matter of course:
-		$bad = sprintf(
-			'"*:<>?\/|%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
-			 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-			10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-			20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-			30, 31
-		);
-		return (strpbrk($filename, $bad) === false);
-	}
-
-	private static function
-	checkPathname ($pathname)
-	{
-		// Exclude the same set of characters as above, with the exception of
-		// slashes. We need a sanitizer, because smbclient can be tricked into
-		// running local shell commands by feeding it a command starting with
-		// '!'. Ensure pathnames do not contain newlines and other special chars
-		// (ironically, '!' itself is allowed):
-		$bad = sprintf(
-			'"*:<>?|%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
-			 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-			10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-			20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-			30, 31
-		);
-		return (strpbrk($pathname, $bad) === false);
+		return sprintf("cd \"%s\"\n%s", $path, $cmd);
 	}
 
 	public static function
-	rm ($user, $pass, $server, $share, $path, $filename)
+	rm ($user, $pass, URI $uri)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rm \"$filename\"");
+		// $uri is the URI of the file to remove:
+		return self::cmdSimple($user, $pass, $uri, $uri->parentDir(),
+			sprintf('rm "%s"', $uri->name()));
 	}
 
 	public static function
-	rename ($user, $pass, $server, $share, $path, $oldname, $newname)
+	rename ($user, $pass, URI $uri, $newname)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rename \"$oldname\" \"$newname\"");
+		// $uri is the URI of the file or dir to rename:
+		$newuri = clone $uri;
+		$newuri->rename($newname);
+		if ($newuri->isWinSafe() === false) {
+			return self::STATUS_INVALID_NAME;
+		}
+		return self::cmdSimple($user, $pass, $uri, $uri->parentDir(),
+			sprintf('rename "%s" "%s"', $uri->name(), $newname));
 	}
 
 	public static function
-	mkdir ($user, $pass, $server, $share, $path, $dirname)
+	mkdir ($user, $pass, URI $uri, $dirname)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"mkdir \"$dirname\"");
+		// $uri is the URI of the dir in which to make the new dir:
+		$newuri = clone $uri;
+		$newuri->addParts($dirname);
+		if ($newuri->isWinSafe() === false) {
+			return self::STATUS_INVALID_NAME;
+		}
+		return self::cmdSimple($user, $pass, $uri, $uri->path(),
+			sprintf('mkdir "%s"', $dirname));
 	}
 
 	public static function
-	rmdir ($user, $pass, $server, $share, $path, $dirname)
+	rmdir ($user, $pass, URI $uri)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rmdir \"$dirname\"");
+		// $uri is the URI of the dir to remove:
+		return self::cmdSimple($user, $pass, $uri, $uri->parentDir(),
+			sprintf('rmdir "%s"', $uri->name()));
 	}
 
 	public static function
-	setMode ($user, $pass, $server, $share, $path, $filename, $modeflags)
+	setMode ($user, $pass, URI $uri, $modeflags)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"setmode \"$filename\" \"$modeflags\"");
-	}
-
-	public static function
-	allInfo ($user, $pass, $server, $share, $path, $dirname)
-	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"allinfo \"$dirname\"");
+		// $uri is the URI of the file to process:
+		return self::cmdSimple($user, $pass, $uri, $uri->parentDir(),
+			sprintf('setmode "%s" "%s"', $uri->name(), $modeflags));
 	}
 }

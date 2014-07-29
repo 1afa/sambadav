@@ -1,3 +1,4 @@
+- Use new URI class for handling URI's, remove manual string manipulations;
 - Move all of SambaDAV to a PSR-0 compliant dir structure;
 - Implement own Browser plugin; remove patch dir;
 - MD5 streamfilter: place in own class, avoid global variable;

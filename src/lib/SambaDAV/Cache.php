@@ -33,7 +33,7 @@ class Cache
 	private static function
 	filename ($user_name, $function, $args)
 	{
-		return CACHE_DIR.'/'.sha1('webfolders'.$user_name.'webfolders'.$function.'webfolders'.join('', $args).'webfolders', false);
+		return CACHE_DIR.'/'.sha1('webfolders'.$user_name.'webfolders'.$function.'webfolders'.join('', array_map('strtolower', $args)).'webfolders', false);
 	}
 
 	private static function
