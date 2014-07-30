@@ -1,3 +1,4 @@
+- Deleting nonempty folders now works; first delete children recursively;
 - smbclient: honor the 'N' flag when encountered for NORMAL files;
 - Show actual server and share in title of Browser plugin, not webserver path;
 - Use new URI class for handling URI's, remove manual string manipulations;

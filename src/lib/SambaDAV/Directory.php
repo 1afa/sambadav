@@ -208,7 +208,7 @@ class Directory extends DAV\FSExt\Directory
 		Log::trace("Directory::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
-			$this->exc_notimplemented('cannot rename root folders');
+			$this->exc_forbidden('cannot rename root folders');
 		}
 		switch (SMB::rename($this->user, $this->pass, $this->uri, $name)) {
 			case SMB::STATUS_OK:
@@ -281,8 +281,13 @@ class Directory extends DAV\FSExt\Directory
 		Log::trace("Directory::delete '%s'\n", $this->uri->uriFull());
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
-			$this->exc_notimplemented('cannot delete root folders');
+			$this->exc_forbidden('cannot delete root folders');
 		}
+		// Delete all children:
+		foreach ($this->getChildren() as $child) {
+			$child->delete();
+		}
+		// Delete ourselves:
 		switch (SMB::rmdir($this->user, $this->pass, $this->uri)) {
 			case SMB::STATUS_OK:
 				$this->cache_destroy();
@@ -484,6 +489,6 @@ class Directory extends DAV\FSExt\Directory
 	{
 		$m = "Not implemented: $msg";
 		Log::trace("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
-		throw new DAV\Exception\Forbidden($m);
+		throw new DAV\Exception\NotImplemented($m);
 	}
 }
