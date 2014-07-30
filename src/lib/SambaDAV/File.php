@@ -1,6 +1,6 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
 /*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
+ * Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -215,7 +215,7 @@ class File extends DAV\FSExt\File
 		if ($invalidate) {
 			// Parent must do a new 'ls' to refresh flags:
 			$this->invalidate_parent();
-			$this->flags = $this->new_flags;
+			$this->flags = $new_flags;
 		}
 		return true;
 	}
