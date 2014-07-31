@@ -39,9 +39,9 @@ class File extends DAV\FSExt\File
 	public function __construct (URI $uri, $entry, Directory $parent, $user, $pass)
 	{
 		$this->uri = $uri;
-		$this->flags = new Propflags($entry[1]);
-		$this->fsize = $entry[2];
-		$this->mtime = $entry[3];
+		$this->flags = new Propflags($entry['flags']);
+		$this->fsize = $entry['size'];
+		$this->mtime = $entry['mtime'];
 		$this->parent = $parent;
 
 		$this->user = $user;

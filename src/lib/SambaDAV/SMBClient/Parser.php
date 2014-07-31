@@ -209,18 +209,18 @@ class Parser
 		if (preg_match("/^  (.*)([A-Za-z ]{7}) ([0-9]{8,}|[0-9 ]{8})  (.*)$/", rtrim($line), $matches) === 0) {
 			return false;
 		}
-		$output[0] = rtrim($matches[1]);	// filename
-		$output[1] = trim($matches[2]);		// flagstring
-		$output[2] = (int)$matches[3];		// filesize (bytes)
+		$output['name'] = rtrim($matches[1]);
+		$output['flags'] = trim($matches[2]);
+		$output['size'] = (int)$matches[3];
 
 		// Create Unix timestamp from freeform date string:
 		$date = date_parse($matches[4]);
 
 		if ($date === false) {
-			$output[3] = 0;
+			$output['mtime'] = null;
 		}
 		else {
-			$output[3] = mktime
+			$output['mtime'] = mktime
 				( $date['hour'], $date['minute'], $date['second']
 				, $date['month'], $date['day'], $date['year']
 				) ;

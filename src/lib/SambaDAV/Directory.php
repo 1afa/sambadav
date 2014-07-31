@@ -69,10 +69,10 @@ class Directory extends DAV\FSExt\Directory
 			$this->get_entries();
 		}
 		foreach ($this->entries as $entry) {
-			if ($entry[0] === '..' || $entry[0] === '.') {
+			if ($entry['name'] === '..' || $entry['name'] === '.') {
 				continue;
 			}
-			$children[] = $this->getChild($entry[0]);
+			$children[] = $this->getChild($entry['name']);
 		}
 		return $children;
 	}
@@ -107,16 +107,16 @@ class Directory extends DAV\FSExt\Directory
 		}
 		if ($this->entries !== false) {
 			foreach ($this->entries as $entry) {
-				if ($entry[0] !== $name) {
+				if ($entry['name'] !== $name) {
 					continue;
 				}
 				$uri = clone $this->uri;
-				$uri->addParts($entry[0]);
+				$uri->addParts($entry['name']);
 
-				if (strpos($entry[1], 'D') === false) {
+				if (strpos($entry['flags'], 'D') === false) {
 					return new File($uri, $entry, $this, $this->user, $this->pass);
 				}
-				return new Directory($uri, $this, $entry[1], $this->user, $this->pass);
+				return new Directory($uri, $this, $entry['flags'], $this->user, $this->pass);
 			}
 		}
 		$uri = clone $this->uri;
@@ -191,7 +191,7 @@ class Directory extends DAV\FSExt\Directory
 			$this->get_entries();
 		}
 		foreach ($this->entries as $entry) {
-			if ($name === $entry[0]) {
+			if ($name === $entry['name']) {
 				return true;
 			}
 		}
