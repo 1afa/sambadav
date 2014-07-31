@@ -27,9 +27,9 @@ class File extends DAV\FSExt\File
 {
 	private $uri;
 	private $etag = null;
-	private $mtime;		// Modification time (Unix timestamp)
-	private $fsize;		// File size (bytes)
+	private $size;		// File size (bytes)
 	private $flags;		// SMB flags
+	private $mtime;		// Modification time (Unix timestamp)
 	private $parent;	// Parent object
 
 	private $user;		// Login credentials
@@ -37,12 +37,12 @@ class File extends DAV\FSExt\File
 
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
-	public function __construct (URI $uri, $entry, Directory $parent, $user, $pass)
+	public function __construct (URI $uri, Directory $parent, $size, $smbflags, $mtime, $user, $pass)
 	{
 		$this->uri = $uri;
-		$this->flags = new Propflags($entry['flags']);
-		$this->fsize = $entry['size'];
-		$this->mtime = $entry['mtime'];
+		$this->flags = new Propflags($smbflags);
+		$this->size = $size;
+		$this->mtime = $mtime;
 		$this->parent = $parent;
 
 		$this->user = $user;
@@ -121,7 +121,7 @@ class File extends DAV\FSExt\File
 			return $this->etag;
 		}
 		// Don't bother if the file is too large:
-		if ($this->fsize > ETAG_SIZE_LIMIT) {
+		if ($this->size > ETAG_SIZE_LIMIT) {
 			return null;
 		}
 		// Create a process in $this->proc, use its read fd:
@@ -146,7 +146,7 @@ class File extends DAV\FSExt\File
 
 	public function getSize ()
 	{
-		return $this->fsize;
+		return $this->size;
 	}
 
 	public function getLastModified ()

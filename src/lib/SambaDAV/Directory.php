@@ -27,18 +27,20 @@ class Directory extends DAV\FSExt\Directory
 {
 	public $uri = null;		// server that the share is on
 	private $entries = false;
-	private $flags = false;		// SMB flags
+	private $flags;			// SMB flags
+	private $mtime;
 	private $parent = null;
 	private $user = false;		// login credentials
 	private $pass = false;
 	private $userhome = null;
 
-	public function __construct (URI $uri, $parent, $smbflags, $user, $pass)
+	public function __construct (URI $uri, $parent, $smbflags, $mtime, $user, $pass)
 	{
 		$this->uri = $uri;
 		$this->user = $user;
 		$this->pass = $pass;
-		$this->flags = new \SambaDAV\Propflags($smbflags);
+		$this->flags = new Propflags($smbflags);
+		$this->mtime = $mtime;
 		$this->parent = $parent;
 	}
 
@@ -51,7 +53,7 @@ class Directory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new Directory(new URI($entry[0], $entry[1]), $this, 'D', $this->user, $this->pass);
+				$children[] = new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass);
 			}
 			return $children;
 		}
@@ -60,7 +62,7 @@ class Directory extends DAV\FSExt\Directory
 			foreach ($this->server_root_entries() as $entry) {
 				$uri = clone $this->uri;
 				$uri->addParts($entry);
-				$children[] = new Directory($uri, $this, 'D', $this->user, $this->pass);
+				$children[] = new Directory($uri, $this, 'D', null, $this->user, $this->pass);
 			}
 			return $children;
 		}
@@ -85,7 +87,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new Directory(new URI($entry[0], $entry[1]), $this, 'D', $this->user, $this->pass);
+					return new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass);
 				}
 			}
 			$this->exc_notfound($name);
@@ -96,7 +98,7 @@ class Directory extends DAV\FSExt\Directory
 			if (in_array($name, $this->server_root_entries())) {
 				$uri = clone $this->uri;
 				$uri->addParts($name);
-				return new Directory($uri, $this, 'D', $this->user, $this->pass);
+				return new Directory($uri, $this, 'D', null, $this->user, $this->pass);
 			}
 			$this->exc_notfound($name);
 			return false;
@@ -114,9 +116,9 @@ class Directory extends DAV\FSExt\Directory
 				$uri->addParts($entry['name']);
 
 				if (strpos($entry['flags'], 'D') === false) {
-					return new File($uri, $entry, $this, $this->user, $this->pass);
+					return new File($uri, $this, $entry['size'], $entry['flags'], $entry['mtime'], $this->user, $this->pass);
 				}
-				return new Directory($uri, $this, $entry['flags'], $this->user, $this->pass);
+				return new Directory($uri, $this, $entry['flags'], $entry['mtime'], $this->user, $this->pass);
 			}
 		}
 		$uri = clone $this->uri;
@@ -222,6 +224,11 @@ class Directory extends DAV\FSExt\Directory
 			case SMB::STATUS_UNAUTHENTICATED: $this->exc_unauthenticated();
 			case SMB::STATUS_INVALID_NAME: $this->exc_forbidden('invalid pathname or filename');
 		}
+	}
+
+	public function getLastModified ()
+	{
+		return $this->mtime;
 	}
 
 	public function getIsHidden ()

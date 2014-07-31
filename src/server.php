@@ -122,7 +122,7 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	Cache::clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new Directory(new URI(), null, 'D', $user, $pass);
+$rootDir = new Directory(new URI(), null, 'D', null, $user, $pass);
 
 // Pass LDAP userhome dir if available:
 if (isset($ldap) && $ldap->userhome !== false) {
