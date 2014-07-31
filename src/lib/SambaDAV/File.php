@@ -26,6 +26,7 @@ use Sabre\DAV;
 class File extends DAV\FSExt\File
 {
 	private $uri;
+	private $etag = null;
 	private $mtime;		// Modification time (Unix timestamp)
 	private $fsize;		// File size (bytes)
 	private $flags;		// SMB flags
@@ -94,7 +95,8 @@ class File extends DAV\FSExt\File
 		switch (SMB::put($this->user, $this->pass, $this->uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
-				return ($md5 === NULL) ? NULL : "\"$md5\"";
+				$this->etag = ($md5 === null) ? null : "\"$md5\"";
+				return $this->etag;
 
 			case SMB::STATUS_NOTFOUND: $this->exc_notfound();
 			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -114,6 +116,10 @@ class File extends DAV\FSExt\File
 	public function getETag ()
 	{
 		Log::trace("File::getETag '%s'\n", $this->uri->uriFull());
+
+		if ($this->etag !== null) {
+			return $this->etag;
+		}
 		// Don't bother if the file is too large:
 		if ($this->fsize > ETAG_SIZE_LIMIT) {
 			return null;
@@ -129,7 +135,8 @@ class File extends DAV\FSExt\File
 		while (fread($fd, 5000000));
 		stream_filter_remove($filter);
 		$this->proc = null;
-		return sprintf('"%s"', $filterOutput->hash);
+		$this->etag = sprintf('"%s"', $filterOutput->hash);
+		return $this->etag;
 	}
 
 	public function getContentType ()
