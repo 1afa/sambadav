@@ -57,7 +57,7 @@ class File extends DAV\FSExt\File
 	public function setName ($name)
 	{
 		Log::trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
-		switch (SMB::rename($this->user, $this->pass, $this->uri, $name)) {
+		switch (SMB::rename($this->user, $this->pass, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->uri->rename($name);
@@ -78,7 +78,7 @@ class File extends DAV\FSExt\File
 		// It's not pretty, but it makes real streaming possible.
 		Log::trace("File::get '%s'\n", $this->uri->uriFull());
 
-		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass);
+		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass, $this->config);
 
 		switch (SMB::get($this->uri, $this->proc)) {
 			case SMB::STATUS_OK: return $this->proc->getOutputStreamHandle();
@@ -92,7 +92,7 @@ class File extends DAV\FSExt\File
 	public function put ($data)
 	{
 		Log::trace("File::put '%s'\n", $this->uri->uriFull());
-		switch (SMB::put($this->user, $this->pass, $this->uri, $data, $md5)) {
+		switch (SMB::put($this->user, $this->pass, $this->config, $this->uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->etag = ($md5 === null) ? null : "\"$md5\"";
@@ -121,8 +121,10 @@ class File extends DAV\FSExt\File
 			return $this->etag;
 		}
 		// Don't bother if the file is too large:
-		if ($this->size > ETAG_SIZE_LIMIT) {
-			return null;
+		if (isset($this->config->etag_size_limit)) {
+			if ($this->size > $this->config->etag_size_limit) {
+				return null;
+			}
 		}
 		// Create a process in $this->proc, use its read fd:
 		if (!is_resource($fd = $this->get())) {
@@ -208,7 +210,7 @@ class File extends DAV\FSExt\File
 		// modeflags necessary to set and unset the proper flags with
 		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
-			switch (SMB::setMode($this->user, $this->pass, $this->uri, $modeflag)) {
+			switch (SMB::setMode($this->user, $this->pass, $this->config, $this->uri, $modeflag)) {
 				case SMB::STATUS_OK:
 					$invalidate = true;
 					continue;
@@ -230,7 +232,7 @@ class File extends DAV\FSExt\File
 	public function delete ()
 	{
 		Log::trace("File::delete '%s'\n", $this->uri->uriFull());
-		switch (SMB::rm($this->user, $this->pass, $this->uri)) {
+		switch (SMB::rm($this->user, $this->pass, $this->config, $this->uri)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				return true;

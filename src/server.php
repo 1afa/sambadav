@@ -38,11 +38,11 @@ if ($config->enabled !== true) {
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:
-$baseuri = (strpos($_SERVER['REQUEST_URI'], SERVER_BASEDIR) === 0) ? SERVER_BASEDIR : '/';
+$baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $config->server_basedir : '/';
 
 // If ANONYMOUS_ONLY is set to true in the config, don't require credentials;
 // also the 'logout' action makes no sense for an anonymous server:
-if (ANONYMOUS_ONLY)
+if ($config->anonymous_only)
 {
 	$user = false;
 	$pass = false;
@@ -77,14 +77,14 @@ else {
 	}
 	// Otherwise, if you're tagged with 'logout', make sure the authentication is refused,
 	// to make the browser flush its cache:
-	if (isset($_GET['logout']) || (ANONYMOUS_ALLOW === false && ($user === false || $pass === false))) {
+	if (isset($_GET['logout']) || ($config->anonymous_allow === false && ($user === false || $pass === false))) {
 		$auth->requireLogin();
 		$loginForm = new LoginForm($baseuri);
 		echo $loginForm->getBody();
 		return;
 	}
 	// If we allow anonymous logins, and we did not get all creds, skip authorization:
-	if (ANONYMOUS_ALLOW && ($user === false || $pass === false))
+	if ($config->anonymous_allow && ($user === false || $pass === false))
 	{
 		$user = false;
 		$pass = false;
@@ -97,7 +97,7 @@ else {
 		}
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
-		if (LDAP_AUTH) {
+		if ($config->ldap_auth) {
 			$ldap = new LDAP();
 
 			if ($ldap->verify($user, $pass, $config->ldap_groups, $config->share_userhome_ldap) === false) {
@@ -110,6 +110,8 @@ else {
 		}
 	}
 }
+Cache::init($config);
+
 // Clean stale cache files every once in a blue moon:
 // Time-based throttling to prevent too-frequent rechecking;
 // Random-based throttling to prevent contention in the "available" second:

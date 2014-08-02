@@ -26,23 +26,25 @@ class Process
 	private $user = false;
 	private $pass = false;
 	private $anonymous = false;
+	private $config;
 
-	public function __construct ($user, $pass)
+	public function __construct ($user, $pass, $config)
 	{
 		// Do anonymous login if ANONYMOUS_ONLY is set, or if ANONYMOUS_ALLOW
 		// is set and not all credentials are filled:
-		$this->anonymous = ANONYMOUS_ONLY || (ANONYMOUS_ALLOW && ($user === false || $pass === false));
+		$this->anonymous = $config->anonymous_only || ($config->anonymous_allow && ($user === false || $pass === false));
 
 		$this->user = $user;
 		$this->pass = $pass;
+		$this->config = $config;
 	}
 
 	public function open ($args, $smbcmd)
 	{
 		// $args is assumed to have been shell-escaped by caller;
 		// append any extra smbclient options if specified:
-		if (defined('SMBCLIENT_EXTRA_OPTS') && is_string(SMBCLIENT_EXTRA_OPTS)) {
-			$args .= ' '.SMBCLIENT_EXTRA_OPTS;
+		if (isset($this->config->smbclient_extra_opts) && is_string($this->config->smbclient_extra_opts)) {
+			$args .= ' '.$this->config->smbclient_extra_opts;
 		}
 		$pipes = array
 			( 0 => array('pipe', 'r')	// child reads from stdin
@@ -62,8 +64,8 @@ class Process
 			) ;
 
 		$cmd = ($this->anonymous)
-			? sprintf('%s --debuglevel=0 --no-pass %s', SMBCLIENT_PATH, $args)
-			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
+			? sprintf('%s --debuglevel=0 --no-pass %s', $this->config->smbclient_path, $args)
+			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
 
 		if (!($this->proc = proc_open($cmd, $pipes, $this->fd, '/', $env))) {
 			return false;

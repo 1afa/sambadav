@@ -135,7 +135,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('Cannot create shares in root');
 		}
-		switch (SMB::mkdir($this->user, $this->pass, $this->uri, $name)) {
+		switch (SMB::mkdir($this->user, $this->pass, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -161,7 +161,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isServerRoot()) {
 			$this->exc_forbidden('Cannot create files in server root');
 		}
-		switch (SMB::put($this->user, $this->pass, $uri, $data, $md5)) {
+		switch (SMB::put($this->user, $this->pass, $this->config, $uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -212,7 +212,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot rename root folders');
 		}
-		switch (SMB::rename($this->user, $this->pass, $this->uri, $name)) {
+		switch (SMB::rename($this->user, $this->pass, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -271,7 +271,7 @@ class Directory extends DAV\FSExt\Directory
 			return ($quota = false);
 		}
 		// Get results from disk cache if available and fresh:
-		$quota = Cache::get('\SambaDAV\SMB::du', array($this->user, $this->pass, $this->uri), $this->user, $this->pass, 20);
+		$quota = Cache::get('\SambaDAV\SMB::du', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 20);
 		if (is_array($quota)) {
 			return $quota;
 		}
@@ -295,7 +295,7 @@ class Directory extends DAV\FSExt\Directory
 			$child->delete();
 		}
 		// Delete ourselves:
-		switch (SMB::rmdir($this->user, $this->pass, $this->uri)) {
+		switch (SMB::rmdir($this->user, $this->pass, $this->config, $this->uri)) {
 			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -328,7 +328,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function cache_destroy ()
 	{
-		Cache::destroy('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->uri), $this->user);
+		Cache::destroy('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->config, $this->uri), $this->user);
 		$this->entries = false;
 	}
 
@@ -340,7 +340,7 @@ class Directory extends DAV\FSExt\Directory
 	private function get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
-		$this->entries = Cache::get('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->uri), $this->user, $this->pass, 5);
+		$this->entries = Cache::get('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 5);
 		if (is_array($this->entries)) {
 			return;
 		}
@@ -378,7 +378,7 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			// Just the server name given; autodiscover all shares on this server:
-			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, new URI($server)), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, $this->config, new URI($server)), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->uri->uriFull());
@@ -437,7 +437,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 			// Only our server name given in $share_extra;
 			// this means: autodiscover and use all the shares on this server:
-			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, $this->uri), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->uri->uriFull());
