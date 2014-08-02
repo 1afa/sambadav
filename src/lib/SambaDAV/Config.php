@@ -21,16 +21,32 @@ namespace SambaDAV;
 
 class Config
 {
-	public $share_root = null;
-	public $share_extra = null;
-	public $share_userhomes = null;
-	public $share_userhome_ldap = null;
-	public $enabled = false;
-	public $ldap_groups = null;
+	private $keys = array();
+
+	public function
+	__get ($name)
+	{
+		return (isset($this->keys[$name]))
+			? $this->keys[$name]
+			: null;
+	}
+
+	public function
+	__set ($name, $value)
+	{
+		$this->keys[$name] = $value;
+	}
+
+	public function
+	__isset ($name)
+	{
+		return isset($this->keys[$name]);
+	}
 
 	public function
 	load ($cfgpath)
 	{
+		// These variables can be set by the config files:
 		$share_root = [];
 		$share_extra = [];
 		$share_archives = [];
@@ -52,9 +68,6 @@ class Config
 		$this->share_userhomes = $share_userhomes;
 		$this->share_userhome_ldap = $share_userhome_ldap;
 		$this->ldap_groups = $ldap_groups;
-
-		if (isset($enable_webfolders) && $enable_webfolders === true) {
-			$this->enabled = true;
-		}
+		$this->enabled = (isset($enable_webfolders) && $enable_webfolders === true) ? true : false;
 	}
 }
