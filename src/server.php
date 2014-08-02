@@ -27,10 +27,11 @@ use Sabre\HTTP;
 include __DIR__ . '/vendor/autoload.php';
 
 // Load config files:
-Config::load(__DIR__ . '/config');
+$config = new Config();
+$config->load(__DIR__ . '/config');
 
 // if this variable is not unambiguously true, bail out immediately:
-if (Config::$enabled !== true) {
+if ($config->enabled !== true) {
 	header('HTTP/1.1 404 Not Found');
 	die();
 }
@@ -99,10 +100,7 @@ else {
 		if (LDAP_AUTH) {
 			$ldap = new LDAP();
 
-			if (!isset(Config::$share_userhome_ldap)) {
-				Config::$share_userhome_ldap = false;
-			}
-			if ($ldap->verify($user, $pass, Config::$ldap_groups, Config::$share_userhome_ldap) === false) {
+			if ($ldap->verify($user, $pass, $config->ldap_groups, $config->share_userhome_ldap) === false) {
 				sleep(2);
 				$auth->requireLogin();
 				$loginForm = new LoginForm($baseuri);
@@ -119,15 +117,15 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	Cache::clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new Directory(new URI(), null, 'D', null, $user, $pass);
+$rootDir = new Directory(new URI(), null, 'D', null, $user, $pass, $config);
 
 // Pass LDAP userhome dir if available:
 if (isset($ldap) && $ldap->userhome !== false) {
 	$rootDir->setUserhome(new URI($ldap->userhome));
 }
 // Otherwise the userhome server if defined:
-else if ($user !== false && isset(Config::$share_userhomes) && Config::$share_userhomes) {
-	$rootDir->setUserhome(new URI(Config::$share_userhomes, $user));
+else if ($user !== false && is_string($config->share_userhomes)) {
+	$rootDir->setUserhome(new URI($config->share_userhomes, $user));
 }
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);

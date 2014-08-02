@@ -31,8 +31,9 @@ class Directory extends DAV\FSExt\Directory
 	private $user = false;		// login credentials
 	private $pass = false;
 	private $userhome = null;
+	private $config;
 
-	public function __construct (URI $uri, $parent, $smbflags, $mtime, $user, $pass)
+	public function __construct (URI $uri, $parent, $smbflags, $mtime, $user, $pass, $config)
 	{
 		$this->uri = $uri;
 		$this->user = $user;
@@ -40,6 +41,7 @@ class Directory extends DAV\FSExt\Directory
 		$this->flags = new Propflags($smbflags);
 		$this->mtime = $mtime;
 		$this->parent = $parent;
+		$this->config = $config;
 	}
 
 	public function getChildren ()
@@ -51,7 +53,7 @@ class Directory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass);
+				$children[] = new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass, $this->config);
 			}
 			return $children;
 		}
@@ -60,7 +62,7 @@ class Directory extends DAV\FSExt\Directory
 			foreach ($this->server_root_entries() as $entry) {
 				$uri = clone $this->uri;
 				$uri->addParts($entry);
-				$children[] = new Directory($uri, $this, 'D', null, $this->user, $this->pass);
+				$children[] = new Directory($uri, $this, 'D', null, $this->user, $this->pass, $this->config);
 			}
 			return $children;
 		}
@@ -85,7 +87,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass);
+					return new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass, $this->config);
 				}
 			}
 			$this->exc_notfound($name);
@@ -96,7 +98,7 @@ class Directory extends DAV\FSExt\Directory
 			if (in_array($name, $this->server_root_entries())) {
 				$uri = clone $this->uri;
 				$uri->addParts($name);
-				return new Directory($uri, $this, 'D', null, $this->user, $this->pass);
+				return new Directory($uri, $this, 'D', null, $this->user, $this->pass, $this->config);
 			}
 			$this->exc_notfound($name);
 			return false;
@@ -114,9 +116,9 @@ class Directory extends DAV\FSExt\Directory
 				$uri->addParts($entry['name']);
 
 				if (strpos($entry['flags'], 'D') === false) {
-					return new File($uri, $this, $entry['size'], $entry['flags'], $entry['mtime'], $this->user, $this->pass);
+					return new File($uri, $this, $entry['size'], $entry['flags'], $entry['mtime'], $this->user, $this->pass, $this->config);
 				}
-				return new Directory($uri, $this, $entry['flags'], $entry['mtime'], $this->user, $this->pass);
+				return new Directory($uri, $this, $entry['flags'], $entry['mtime'], $this->user, $this->pass, $this->config);
 			}
 		}
 		$uri = clone $this->uri;
@@ -363,7 +365,7 @@ class Directory extends DAV\FSExt\Directory
 		// $entries = array('name-of-root-folder' => array('server', 'share-on-that-server'))
 		$entries = array();
 
-		foreach (Config::$share_root as $entry)
+		foreach ($this->config->share_root as $entry)
 		{
 			$server = (isset($entry[0])) ? $entry[0] : false;
 			$share  = (isset($entry[1])) ? $entry[1] : false;
@@ -390,7 +392,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 		}
 		// Servers from $shares_extra get a folder with the name of the *server*:
-		foreach (Config::$share_extra as $entry) {
+		foreach ($this->config->share_extra as $entry) {
 			$entries[$entry[0]] = array($entry[0], false);
 		}
 		// The user's home directory gets a folder with the name of the *user*:
@@ -412,7 +414,7 @@ class Directory extends DAV\FSExt\Directory
 
 		// Shares in the global root belonging to this server
 		// also show up in the server's own subdir:
-		foreach (Config::$share_root as $entry) {
+		foreach ($this->config->share_root as $entry) {
 			$server = (isset($entry[0])) ? $entry[0] : null;
 			$share = (isset($entry[1])) ? $entry[1] : null;
 			if ($server != $this->uri->server()) {
@@ -423,7 +425,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 			$entries[$share] = 1;
 		}
-		foreach (Config::$share_extra as $entry) {
+		foreach ($this->config->share_extra as $entry) {
 			$server = (isset($entry[0])) ? $entry[0] : null;
 			$share = (isset($entry[1])) ? $entry[1] : null;
 			if ($server != $this->uri->server()) {

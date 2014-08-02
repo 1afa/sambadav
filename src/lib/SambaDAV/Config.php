@@ -21,14 +21,14 @@ namespace SambaDAV;
 
 class Config
 {
-	public static $share_root = null;
-	public static $share_extra = null;
-	public static $share_userhomes = null;
-	public static $share_userhome_ldap = null;
-	public static $enabled = false;
-	public static $ldap_groups = null;
+	public $share_root = null;
+	public $share_extra = null;
+	public $share_userhomes = null;
+	public $share_userhome_ldap = null;
+	public $enabled = false;
+	public $ldap_groups = null;
 
-	public static function
+	public function
 	load ($cfgpath)
 	{
 		$share_root = [];
@@ -47,14 +47,14 @@ class Config
 			}
 			closedir($dir);
 		}
-		self::$share_root = array_merge($share_root, $share_archives);
-		self::$share_extra = $share_extra;
-		self::$share_userhomes = $share_userhomes;
-		self::$share_userhome_ldap = $share_userhome_ldap;
-		self::$ldap_groups = $ldap_groups;
+		$this->share_root = array_merge($share_root, $share_archives);
+		$this->share_extra = $share_extra;
+		$this->share_userhomes = $share_userhomes;
+		$this->share_userhome_ldap = $share_userhome_ldap;
+		$this->ldap_groups = $ldap_groups;
 
 		if (isset($enable_webfolders) && $enable_webfolders === true) {
-			self::$enabled = true;
+			$this->enabled = true;
 		}
 	}
 }

@@ -32,10 +32,11 @@ class File extends DAV\FSExt\File
 
 	private $user;		// Login credentials
 	private $pass;
+	private $config;
 
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
-	public function __construct (URI $uri, Directory $parent, $size, $smbflags, $mtime, $user, $pass)
+	public function __construct (URI $uri, Directory $parent, $size, $smbflags, $mtime, $user, $pass, $config)
 	{
 		$this->uri = $uri;
 		$this->flags = new Propflags($smbflags);
@@ -45,6 +46,7 @@ class File extends DAV\FSExt\File
 
 		$this->user = $user;
 		$this->pass = $pass;
+		$this->config = $config;
 	}
 
 	public function getName ()
