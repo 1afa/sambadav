@@ -26,6 +26,7 @@ class Config
 	public static $share_userhomes = null;
 	public static $share_userhome_ldap = null;
 	public static $enabled = false;
+	public static $ldap_groups = null;
 
 	public static function
 	load ($cfgpath)
@@ -35,25 +36,22 @@ class Config
 		$share_archives = [];
 		$share_userhomes = null;
 		$share_userhome_ldap = null;
+		$ldap_groups = null;
 
-		// Dynamic shares config; these are optional includes:
-		$files =
-			[ "$cfgpath/share_root.inc.php"
-			, "$cfgpath/share_archives.inc.php"
-			, "$cfgpath/share_extra.inc.php"
-			, "$cfgpath/share_userhomes.inc.php"
-			] ;
-
-		foreach ($files as $file) {
-			if (!file_exists($file)) {
-				continue;
+		// Source all php files in the config dir:
+		if ($dir = opendir($cfgpath)) {
+			while (($entry = readdir($dir)) !== false) {
+				if (substr($entry, -4) === '.php') {
+					include "{$cfgpath}/{$entry}";
+				}
 			}
-			include $file;
+			closedir($dir);
 		}
 		self::$share_root = array_merge($share_root, $share_archives);
 		self::$share_extra = $share_extra;
 		self::$share_userhomes = $share_userhomes;
 		self::$share_userhome_ldap = $share_userhome_ldap;
+		self::$ldap_groups = $ldap_groups;
 
 		if (isset($enable_webfolders) && $enable_webfolders === true) {
 			self::$enabled = true;

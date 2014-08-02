@@ -1,3 +1,4 @@
+- Config: load all PHP files from config dir, not just the "well known" ones;
 - Implement getLastModified for directories;
 - Deleting nonempty folders now works; first delete children recursively;
 - smbclient: honor the 'N' flag when encountered for NORMAL files;

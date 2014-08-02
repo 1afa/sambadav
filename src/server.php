@@ -26,10 +26,7 @@ use Sabre\HTTP;
 
 include __DIR__ . '/vendor/autoload.php';
 
-// Load the main config file:
-include __DIR__ . '/config/config.inc.php';
-
-// Load the shares config into the static Config class:
+// Load config files:
 Config::load(__DIR__ . '/config');
 
 // if this variable is not unambiguously true, bail out immediately:
@@ -105,7 +102,7 @@ else {
 			if (!isset(Config::$share_userhome_ldap)) {
 				Config::$share_userhome_ldap = false;
 			}
-			if ($ldap->verify($user, $pass, $ldap_groups, Config::$share_userhome_ldap) === false) {
+			if ($ldap->verify($user, $pass, Config::$ldap_groups, Config::$share_userhome_ldap) === false) {
 				sleep(2);
 				$auth->requireLogin();
 				$loginForm = new LoginForm($baseuri);
