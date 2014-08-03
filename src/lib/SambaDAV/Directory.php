@@ -28,16 +28,14 @@ class Directory extends DAV\FSExt\Directory
 	private $flags;			// SMB flags
 	private $mtime;
 	private $parent = null;
-	private $user = false;		// login credentials
-	private $pass = false;
 	private $userhome = null;
+	private $auth;
 	private $config;
 
-	public function __construct (URI $uri, $parent, $smbflags, $mtime, $user, $pass, $config)
+	public function __construct ($auth, $config, URI $uri, $parent, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
-		$this->user = $user;
-		$this->pass = $pass;
+		$this->auth = $auth;
 		$this->flags = new Propflags($smbflags);
 		$this->mtime = $mtime;
 		$this->parent = $parent;
@@ -53,7 +51,7 @@ class Directory extends DAV\FSExt\Directory
 		// If in root folder, show master shares list:
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass, $this->config);
+				$children[] = new Directory($this->auth, $this->config, new URI($entry[0], $entry[1]), $this, 'D', null);
 			}
 			return $children;
 		}
@@ -62,7 +60,7 @@ class Directory extends DAV\FSExt\Directory
 			foreach ($this->server_root_entries() as $entry) {
 				$uri = clone $this->uri;
 				$uri->addParts($entry);
-				$children[] = new Directory($uri, $this, 'D', null, $this->user, $this->pass, $this->config);
+				$children[] = new Directory($this->auth, $this->config, $uri, $this, 'D', null);
 			}
 			return $children;
 		}
@@ -87,7 +85,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new Directory(new URI($entry[0], $entry[1]), $this, 'D', null, $this->user, $this->pass, $this->config);
+					return new Directory($this->auth, $this->config, new URI($entry[0], $entry[1]), $this, 'D', null);
 				}
 			}
 			$this->exc_notfound($name);
@@ -98,7 +96,7 @@ class Directory extends DAV\FSExt\Directory
 			if (in_array($name, $this->server_root_entries())) {
 				$uri = clone $this->uri;
 				$uri->addParts($name);
-				return new Directory($uri, $this, 'D', null, $this->user, $this->pass, $this->config);
+				return new Directory($this->auth, $this->config, $uri, $this, 'D', null);
 			}
 			$this->exc_notfound($name);
 			return false;
@@ -116,9 +114,9 @@ class Directory extends DAV\FSExt\Directory
 				$uri->addParts($entry['name']);
 
 				if (strpos($entry['flags'], 'D') === false) {
-					return new File($uri, $this, $entry['size'], $entry['flags'], $entry['mtime'], $this->user, $this->pass, $this->config);
+					return new File($this->auth, $this->config, $uri, $this, $entry['size'], $entry['flags'], $entry['mtime']);
 				}
-				return new Directory($uri, $this, $entry['flags'], $entry['mtime'], $this->user, $this->pass, $this->config);
+				return new Directory($this->auth, $this->config, $uri, $this, $entry['flags'], $entry['mtime']);
 			}
 		}
 		$uri = clone $this->uri;
@@ -135,7 +133,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('Cannot create shares in root');
 		}
-		switch (SMB::mkdir($this->user, $this->pass, $this->config, $this->uri, $name)) {
+		switch (SMB::mkdir($this->auth, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -161,7 +159,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isServerRoot()) {
 			$this->exc_forbidden('Cannot create files in server root');
 		}
-		switch (SMB::put($this->user, $this->pass, $this->config, $uri, $data, $md5)) {
+		switch (SMB::put($this->auth, $this->config, $uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
@@ -212,7 +210,7 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot rename root folders');
 		}
-		switch (SMB::rename($this->user, $this->pass, $this->config, $this->uri, $name)) {
+		switch (SMB::rename($this->auth, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -271,7 +269,7 @@ class Directory extends DAV\FSExt\Directory
 			return ($quota = false);
 		}
 		// Get results from disk cache if available and fresh:
-		$quota = Cache::get('\SambaDAV\SMB::du', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 20);
+		$quota = Cache::get('\SambaDAV\SMB::du', array($this->auth, $this->config, $this->uri), $this->auth, $this->uri, 20);
 		if (is_array($quota)) {
 			return $quota;
 		}
@@ -295,7 +293,7 @@ class Directory extends DAV\FSExt\Directory
 			$child->delete();
 		}
 		// Delete ourselves:
-		switch (SMB::rmdir($this->user, $this->pass, $this->config, $this->uri)) {
+		switch (SMB::rmdir($this->auth, $this->config, $this->uri)) {
 			case SMB::STATUS_OK:
 				$this->cache_destroy();
 				$this->invalidate_parent();
@@ -328,11 +326,11 @@ class Directory extends DAV\FSExt\Directory
 
 	public function cache_destroy ()
 	{
-		Cache::destroy('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->config, $this->uri), $this->user);
+		Cache::destroy('\SambaDAV\SMB::ls', array($this->auth, $this->config, $this->uri), $this->auth, $this->uri);
 		$this->entries = false;
 	}
 
-	public function setUserhome (URI $uri)
+	public function setUserhome ($uri)
 	{
 		$this->userhome = $uri;
 	}
@@ -340,7 +338,7 @@ class Directory extends DAV\FSExt\Directory
 	private function get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
-		$this->entries = Cache::get('\SambaDAV\SMB::ls', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 5);
+		$this->entries = Cache::get('\SambaDAV\SMB::ls', array($this->auth, $this->config, $this->uri), $this->auth, $this->uri, 5);
 		if (is_array($this->entries)) {
 			return;
 		}
@@ -378,7 +376,7 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			// Just the server name given; autodiscover all shares on this server:
-			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, $this->config, new URI($server)), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->auth, $this->config, new URI($server)), $this->auth, $this->uri, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->uri->uriFull());
@@ -397,9 +395,9 @@ class Directory extends DAV\FSExt\Directory
 		}
 		// The user's home directory gets a folder with the name of the *user*:
 		// User can be false if we allow anonymous logins, in which case ignore:
-		if ($this->user !== false && $this->userhome !== null) {
+		if ($this->auth->user !== null && $this->userhome !== null) {
 			if ($this->userhome->isServerRoot()) {
-				$entries[$this->user] = array($this->userhome->server(), $this->user);
+				$entries[$this->auth->user] = array($this->userhome->server(), $this->auth->user);
 			}
 			else {
 				$entries[$this->userhome->share()] = array($this->userhome->server(), $this->userhome->share());
@@ -437,7 +435,7 @@ class Directory extends DAV\FSExt\Directory
 			}
 			// Only our server name given in $share_extra;
 			// this means: autodiscover and use all the shares on this server:
-			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->user, $this->pass, $this->config, $this->uri), $this->user, $this->pass, 15))) {
+			if (!is_array($shares = Cache::get('\SambaDAV\SMB::getShares', array($this->auth, $this->config, $this->uri), $this->auth, $this->uri, 15))) {
 				// TODO: throw an exception?
 				// switch ($shares) {
 				// 	case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->uri->uriFull());
@@ -451,10 +449,10 @@ class Directory extends DAV\FSExt\Directory
 			}
 		}
 		// User's home share is on this server?
-		if ($this->user !== false && $this->userhome !== null) {
+		if ($this->auth->user !== null && $this->userhome !== null) {
 			if ($this->userhome->server() !== null && $this->userhome->server() == $this->uri->server()) {
 				if ($this->userhome->share() === null) {
-					$entries[$this->user] = 1;
+					$entries[$this->auth->user] = 1;
 				}
 				else {
 					$entries[$this->userhome->share()] = 1;
@@ -487,7 +485,7 @@ class Directory extends DAV\FSExt\Directory
 
 	private function exc_unauthenticated ()
 	{
-		$m = sprintf("'%s' not authenticated for '%s'", $this->user, $this->uri->uriFull());
+		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
 		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}

@@ -28,10 +28,10 @@ class SMB
 	const STATUS_SMBCLIENT_ERROR	= 4;
 
 	public static function
-	getShares ($user, $pass, $config, URI $uri)
+	getShares ($auth, $config, $uri)
 	{
 		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass, $config);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, false) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -41,7 +41,7 @@ class SMB
 	}
 
 	public static function
-	ls ($user, $pass, $config, URI $uri)
+	ls ($auth, $config, $uri)
 	{
 		Log::trace("SMB::ls '%s'\n", $uri->uriFull());
 
@@ -50,7 +50,7 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($uri->path(), 'ls');
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass, $config);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -60,13 +60,13 @@ class SMB
 	}
 
 	public static function
-	du ($user, $pass, $config, URI $uri)
+	du ($auth, $config, $uri)
 	{
 		Log::trace("SMB::du '%s'\n", $uri->uriFull());
 
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($uri->path(), 'du');
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass, $config);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -76,7 +76,7 @@ class SMB
 	}
 
 	public static function
-	get (URI $uri, $proc)
+	get ($uri, $proc)
 	{
 		Log::trace("SMB::get '%s'\n", $uri->uriFull());
 
@@ -99,7 +99,7 @@ class SMB
 	}
 
 	public static function
-	put ($user, $pass, $config, URI $uri, $data, &$md5)
+	put ($auth, $config, $uri, $data, &$md5)
 	{
 		Log::trace("SMB::put '%s'\n", $uri->uriFull());
 
@@ -108,7 +108,7 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($uri->parentDir(), sprintf('put /proc/self/fd/4 "%s"', $uri->name()));
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass, $config);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -143,7 +143,7 @@ class SMB
 	}
 
 	private static function
-	cmdSimple ($user, $pass, $config, URI $uri, $path, $cmd)
+	cmdSimple ($auth, $config, $uri, $path, $cmd)
 	{
 		// A helper function that sends a simple (silent)
 		// command to smbclient and reports the result status.
@@ -155,7 +155,7 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($path, $cmd);
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass, $config);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -179,15 +179,15 @@ class SMB
 	}
 
 	public static function
-	rm ($user, $pass, $config, URI $uri)
+	rm ($auth, $config, $uri)
 	{
 		// $uri is the URI of the file to remove:
-		return self::cmdSimple($user, $pass, $config, $uri, $uri->parentDir(),
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
 			sprintf('rm "%s"', $uri->name()));
 	}
 
 	public static function
-	rename ($user, $pass, $config, URI $uri, $newname)
+	rename ($auth, $config, $uri, $newname)
 	{
 		// $uri is the URI of the file or dir to rename:
 		$newuri = clone $uri;
@@ -195,12 +195,12 @@ class SMB
 		if ($newuri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		return self::cmdSimple($user, $pass, $config, $uri, $uri->parentDir(),
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
 			sprintf('rename "%s" "%s"', $uri->name(), $newname));
 	}
 
 	public static function
-	mkdir ($user, $pass, $config, URI $uri, $dirname)
+	mkdir ($auth, $config, $uri, $dirname)
 	{
 		// $uri is the URI of the dir in which to make the new dir:
 		$newuri = clone $uri;
@@ -208,23 +208,23 @@ class SMB
 		if ($newuri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		return self::cmdSimple($user, $pass, $config, $uri, $uri->path(),
+		return self::cmdSimple($auth, $config, $uri, $uri->path(),
 			sprintf('mkdir "%s"', $dirname));
 	}
 
 	public static function
-	rmdir ($user, $pass, $config, URI $uri)
+	rmdir ($auth, $config, $uri)
 	{
 		// $uri is the URI of the dir to remove:
-		return self::cmdSimple($user, $pass, $config, $uri, $uri->parentDir(),
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
 			sprintf('rmdir "%s"', $uri->name()));
 	}
 
 	public static function
-	setMode ($user, $pass, $config, URI $uri, $modeflags)
+	setMode ($auth, $config, $uri, $modeflags)
 	{
 		// $uri is the URI of the file to process:
-		return self::cmdSimple($user, $pass, $config, $uri, $uri->parentDir(),
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
 			sprintf('setmode "%s" "%s"', $uri->name(), $modeflags));
 	}
 }

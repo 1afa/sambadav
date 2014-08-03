@@ -26,10 +26,10 @@ class LDAP
 	private $basedn = false;
 	public $userhome = false;
 
-	public function verify ($user, $pass, $ldap_groups = false, $prop_userhome = false)
+	public function verify ($user, $pass, $ldap_groups = null, $prop_userhome = null)
 	{
-		if ($user === false || $user === ''
-		 || $pass === false || $pass === '') {
+		if ($user === null || $user === ''
+		 || $pass === null || $pass === '') {
 			return false;
 		}
 		if ($this->getParams() === false) {
@@ -102,7 +102,7 @@ class LDAP
 
 	private function groupSearch ($user, $groups)
 	{
-		if ($groups === false) {
+		if ($groups === null) {
 			return true;
 		}
 		$searchdn = sprintf('ou=Groups,%s', $this->escape($this->basedn));
@@ -116,7 +116,7 @@ class LDAP
 
 	private function userhomeSearch ($user, $prop_userhome)
 	{
-		if ($prop_userhome === false) {
+		if ($prop_userhome === null) {
 			return true;
 		}
 		// If $prop_userhome is set, try to find the given property;

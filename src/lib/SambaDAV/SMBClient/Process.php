@@ -23,19 +23,17 @@ class Process
 {
 	public $fd = false;
 	private $proc = false;
-	private $user = false;
-	private $pass = false;
+	private $auth = false;
 	private $anonymous = false;
 	private $config;
 
-	public function __construct ($user, $pass, $config)
+	public function __construct ($auth, $config)
 	{
 		// Do anonymous login if ANONYMOUS_ONLY is set, or if ANONYMOUS_ALLOW
 		// is set and not all credentials are filled:
-		$this->anonymous = $config->anonymous_only || ($config->anonymous_allow && ($user === false || $pass === false));
+		$this->anonymous = $config->anonymous_only || ($config->anonymous_allow && ($auth->user === null || $auth->pass === null));
 
-		$this->user = $user;
-		$this->pass = $pass;
+		$this->auth = $auth;
 		$this->config = $config;
 	}
 
@@ -73,7 +71,7 @@ class Process
 		if (!is_resource($this->proc)) {
 			return false;
 		}
-		if (!$this->writeAuthFile($this->user, $this->pass)) {
+		if (!$this->writeAuthFile($this->auth->sambaUsername(), $this->auth->pass)) {
 			return false;
 		}
 		if (!$this->writeCommand($smbcmd)) {
@@ -100,7 +98,7 @@ class Process
 	private function writeAuthFile ($user, $pass)
 	{
 		if (!$this->anonymous) {
-			$creds = ($pass === false)
+			$creds = ($pass === null)
 				? "username=$user"
 				: "username=$user\npassword=$pass";
 

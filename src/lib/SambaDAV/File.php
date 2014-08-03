@@ -30,13 +30,12 @@ class File extends DAV\FSExt\File
 	private $mtime;		// Modification time (Unix timestamp)
 	private $parent;	// Parent object
 
-	private $user;		// Login credentials
-	private $pass;
+	private $auth;
 	private $config;
 
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
-	public function __construct (URI $uri, Directory $parent, $size, $smbflags, $mtime, $user, $pass, $config)
+	public function __construct ($auth, $config, $uri, Directory $parent, $size, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->flags = new Propflags($smbflags);
@@ -44,8 +43,7 @@ class File extends DAV\FSExt\File
 		$this->mtime = $mtime;
 		$this->parent = $parent;
 
-		$this->user = $user;
-		$this->pass = $pass;
+		$this->auth = $auth;
 		$this->config = $config;
 	}
 
@@ -57,7 +55,7 @@ class File extends DAV\FSExt\File
 	public function setName ($name)
 	{
 		Log::trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
-		switch (SMB::rename($this->user, $this->pass, $this->config, $this->uri, $name)) {
+		switch (SMB::rename($this->auth, $this->config, $this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->uri->rename($name);
@@ -78,7 +76,7 @@ class File extends DAV\FSExt\File
 		// It's not pretty, but it makes real streaming possible.
 		Log::trace("File::get '%s'\n", $this->uri->uriFull());
 
-		$this->proc = new \SambaDAV\SMBClient\Process($this->user, $this->pass, $this->config);
+		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
 
 		switch (SMB::get($this->uri, $this->proc)) {
 			case SMB::STATUS_OK: return $this->proc->getOutputStreamHandle();
@@ -92,7 +90,7 @@ class File extends DAV\FSExt\File
 	public function put ($data)
 	{
 		Log::trace("File::put '%s'\n", $this->uri->uriFull());
-		switch (SMB::put($this->user, $this->pass, $this->config, $this->uri, $data, $md5)) {
+		switch (SMB::put($this->auth, $this->config, $this->uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->etag = ($md5 === null) ? null : "\"$md5\"";
@@ -210,7 +208,7 @@ class File extends DAV\FSExt\File
 		// modeflags necessary to set and unset the proper flags with
 		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
-			switch (SMB::setMode($this->user, $this->pass, $this->config, $this->uri, $modeflag)) {
+			switch (SMB::setMode($this->auth, $this->config, $this->uri, $modeflag)) {
 				case SMB::STATUS_OK:
 					$invalidate = true;
 					continue;
@@ -232,7 +230,7 @@ class File extends DAV\FSExt\File
 	public function delete ()
 	{
 		Log::trace("File::delete '%s'\n", $this->uri->uriFull());
-		switch (SMB::rm($this->user, $this->pass, $this->config, $this->uri)) {
+		switch (SMB::rm($this->auth, $this->config, $this->uri)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				return true;
@@ -274,7 +272,7 @@ class File extends DAV\FSExt\File
 
 	private function exc_unauthenticated ()
 	{
-		$m = sprintf("'%s' not authenticated for '%s'", $this->user, $this->uri->uriFull());
+		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
 		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}

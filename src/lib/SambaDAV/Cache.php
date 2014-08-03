@@ -37,9 +37,10 @@ class Cache
 	}
 
 	private static function
-	filename ($user_name, $function, $args)
+	filename ($auth, $function, $uri)
 	{
-		return self::$config->cache_dir.'/'.sha1('webfolders'.$user_name.'webfolders'.$function.'webfolders'.join('', array_map('strtolower', $args)).'webfolders', false);
+		// Filename is unique for function, URI and username:
+		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $function . $uri->uriFull(), false));
 	}
 
 	private static function
@@ -184,7 +185,7 @@ class Cache
 	}
 
 	public static function
-	get ($function, $args = array(), $user_name, $user_key, $timeout)
+	get ($function, $args = array(), $auth, $uri, $timeout)
 	{
 		// $user_key is a unique per-user value, used to save lookup
 		// results under that user's identifier.
@@ -197,7 +198,11 @@ class Cache
 		if (($iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC)) === false) {
 			return call_user_func_array($function, $args);
 		}
-		$filename = self::filename($user_name, $function, $args);
+		$filename = self::filename($auth, $function, $uri);
+
+		// The key we use to encrypt the data:
+		$user_key = $auth->pass . $function . $uri->uriFull();
+
 		if (self::read($filename, $iv_size, $user_key, $timeout, $data)) {
 			return $data;
 		}
@@ -208,7 +213,7 @@ class Cache
 	}
 
 	public static function
-	destroy ($function, $args = array(), $user_name)
+	destroy ($function, $args = array(), $auth, $uri)
 	{
 		if (self::$config->cache_use === false) {
 			return;
@@ -216,7 +221,7 @@ class Cache
 		// Try to get blocking lock on cache clean semaphore file:
 		// If this call fails, just steam ahead regardless:
 		$fd = self::clean_semaphore_open(true);
-		@unlink(self::filename($user_name, $function, $args));
+		@unlink(self::filename($auth, $function, $uri));
 		if ($fd) self::clean_semaphore_close($fd);
 	}
 

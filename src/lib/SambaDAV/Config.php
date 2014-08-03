@@ -44,13 +44,6 @@ class Config
 	}
 
 	public function
-	__tostring ()
-	{
-		// This method is called by the cache; return bogus value:
-		return '';
-	}
-
-	public function
 	load ($cfgpath)
 	{
 		// These variables can be set by the config files:
