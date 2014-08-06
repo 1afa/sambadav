@@ -129,6 +129,10 @@ class URI
 		if (!is_string($parts)) {
 			return;
 		}
+		// Translate backslashes to slashes,
+		// handle strings of the form '\\server\share':
+		$parts = strtr($parts, '\\', '/');
+
 		// Add new parts:
 		foreach (explode('/', $parts) as $part) {
 			if ($part !== '') {
