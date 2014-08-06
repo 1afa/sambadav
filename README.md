@@ -139,35 +139,24 @@ directory, we'll assume `/tmp` for convenience:
 
 ```sh
 cd /tmp
-tar xvf /path/to/sambadav-0.2.1.tar.gz
+tar xvf /path/to/sambadav-version.tar.gz
 ```
 
-If you look inside the unpacked tarball, you will see two toplevel directories:
-
-- `img/` contains the SVG files for the file and directory icons, and the
-  Makefile to generate the PNGs;
-
-- `src/` contains the application source code, the part that should be copied
-  wholesale to a directory on the web server (for which this guide will assume
-  `/var/www/htdocs/webfolders`);
-
-Copy everything in `src/` to the webserver folder:
+Copy the application source to a directory on on the web server. We'll assume
+that the application directory is `/var/www/htdocs/webfolders`:
 
 ```sh
-cp -ar /tmp/sambadav-0.2.1/src /var/www/htdocs/webfolders
+cp -ar /tmp/sambadav-version/src /var/www/htdocs/webfolders
 ```
 
-SambaDAV uses [SabreDAV](http://sabre.io/dav) as a backend server.
-Installing SabreDAV is done using [Composer](http://getcomposer.org).
-After downloading and installing Composer, run these commands to download the dependencies:
+Install [SabreDAV](http://sabre.io/dav) using [Composer](http://getcomposer.org):
 
 ```sh
-# cd /var/www/htdocs/webfolders
-# composer install
+cd /var/www/htdocs/webfolders
+composer --optimize-autoloader install
 ```
 
-The following directions should be made writable by the user the webserver runs
-under:
+The following directories should be made writable for the webserver:
 
 - `log`: tracelogs are written here;
 - `data`: the place where SabreDAV keeps lockfiles.
@@ -180,25 +169,24 @@ chmod 0750 /var/www/htdocs/webfolders/{log,data}
 ```
 
 At this point all the files are in the right place, all that's left is
-to configure Apache and SambaDAV.
+to configure the webserver and SambaDAV.
 
 
 ## Webserver configuration
 
-We'll assume we installed SambaDAV in `/var/www/htdocs/webfolders`, where
-`/var/www/htdocs` is the server root. We prefer the `/webfolders` subdirectory
-over `/sambadav` because it's implementation-neutral and easier for users to
-remember when visiting with a browser. For native WebDAV clients we'll do one
-better and allow them to connect straight to the root of the domain at port 80,
-by redirecting them in two steps to the proper location. This is more than
-just fancy: it's the only way the internal Windows XP WebDAV client will
-connect to a subfolder over SSL at all.
+We assume that you're running your web server on the standard port 443 (because
+you're using SSL!) and want to serve SambaDAV from a subdirectory. In the
+browser, SambaDAV will be available via `https://example.com/webfolders`. For
+native WebDAV clients we'll do one better and allow them to connect straight to
+`http://example.com/`, by redirecting them in two steps to the proper location.
+This is more than just fancy: it's the only way the internal Windows XP WebDAV
+client will connect to a subfolder over SSL at all.
 
 The webserver configuration is fairly involved because we want to support as
 wide a range of clients as possible. Support for Windows XP's built-in WebDAV
 client in particular is tricky to set up. The Windows XP client always connects
 to the root of the domain at port 80. In order to get it to use SSL at port 443
-and use the `/webfolders` subdirectory, we must take the following steps:
+and use `/webfolders`, we must take the following steps:
 
 1. Detect that a Windows XP client is trying to connect to port 80 at the
    root of the domain by sniffing the user agent string;
@@ -217,11 +205,10 @@ After these three steps, connecting with the Windows XP WebDAV client to
 `http://www.example.com/` will properly redirect to
 `https://www.example.com/webfolders/`.
 
-Because this trick is useful for other WebDAV clients as well (users can point
-their native WebDAV clients straight to the root of the domain), we've expanded
-the list of eligible user agents from just the Windows XP internal one to a
-full range. This goes in the virtual host section for your plain HTTP server on
-port 80:
+Because this trick is convenient for everyone who uses a native WebDAV client,
+we've expanded the list of eligible user agents from just the Windows XP
+internal one to a full range. This goes in the virtual host section for your
+plain HTTP server on port 80:
 
 ```apache
 # Workaround for the builtin WinXP WebDAV client: it can only connect to the
@@ -252,13 +239,12 @@ RewriteRule ^/(.*) https://%{HTTP_HOST}:443/$1  [R]
 RewriteRule ^/webfolders(.*) https://%{HTTP_HOST}/webfolders$1 [R]
 ```
 
-Since, for the sake of this example, we are not installing into the root of the
-server, but in the `/webfolders` subdirectory, we also want to transparently
-redirect WebDAV clients who arrive at the root of the server to the
-`/webfolders` subdirectory. Clients who reach this point always do so over SSL
-(since otherwise they would have been caught by the snippet above), so the
-following goes in the virtual host configuration for the SSL server on port
-443:
+Since, for the sake of this manual, we are using the `/webfolders`
+subdirectory, we also want to transparently redirect WebDAV clients who arrive
+at the root of the server to `/webfolders`. Clients who reach this point always
+do so over SSL (since otherwise they would have been caught by the snippet
+above), so the following goes in the virtual host configuration for the SSL
+server on port 443:
 
 ```apache
 # Special rule for the WinXP driveletter mounter;

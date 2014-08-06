@@ -61,13 +61,12 @@ $rootDir = new Directory($auth, $config, new URI(), null, 'D', null);
 // Add userhome to root dir:
 $rootDir->setUserhome($auth->getUserhome());
 
-// The object tree needs in turn to be passed to the server class
+// The object tree needs in turn to be passed to the server class:
 $server = new DAV\Server($rootDir);
-
-// We're required to set the base uri. Check if the request was rewritten:
 $server->setBaseUri($baseuri);
 
-// Also make sure there is a 'data' directory, writable by the server. This directory is used to store information about locks
+// Also make sure there is a 'data' directory, writable by the server.
+// This directory is used to store information about locks:
 $lockBackend = new DAV\Locks\Backend\File('data/locks.dat');
 $lockPlugin = new DAV\Locks\Plugin($lockBackend);
 $server->addPlugin($lockPlugin);
