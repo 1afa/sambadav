@@ -85,6 +85,11 @@ class Auth
 		if ($this->config->anonymous_allow && ($this->null === null || $this->pass === null)) {
 			return true;
 		}
+		// Strip possible domain part off the username:
+		// WinXP likes to pass this sometimes:
+		if (($pos = strpos($this->user, '\\')) !== false) {
+			$this->user = substr($this->user, $pos + 1);
+		}
 		// Set userhome to userhome pattern if defined:
 		if ($this->user !== null) {
 			if ($this->config->share_userhomes) {
