@@ -1,23 +1,21 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV\SMBClient;
 
@@ -209,18 +207,18 @@ class Parser
 		if (preg_match("/^  (.*)([A-Za-z ]{7}) ([0-9]{8,}|[0-9 ]{8})  (.*)$/", rtrim($line), $matches) === 0) {
 			return false;
 		}
-		$output[0] = rtrim($matches[1]);	// filename
-		$output[1] = trim($matches[2]);		// flagstring
-		$output[2] = (int)$matches[3];		// filesize (bytes)
+		$output['name'] = rtrim($matches[1]);
+		$output['flags'] = trim($matches[2]);
+		$output['size'] = (int)$matches[3];
 
 		// Create Unix timestamp from freeform date string:
 		$date = date_parse($matches[4]);
 
 		if ($date === false) {
-			$output[3] = 0;
+			$output['mtime'] = null;
 		}
 		else {
-			$output[3] = mktime
+			$output['mtime'] = mktime
 				( $date['hour'], $date['minute'], $date['second']
 				, $date['month'], $date['day'], $date['year']
 				) ;

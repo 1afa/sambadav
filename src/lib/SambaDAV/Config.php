@@ -21,42 +21,83 @@ namespace SambaDAV;
 
 class Config
 {
-	public static $share_root = null;
-	public static $share_extra = null;
-	public static $share_userhomes = null;
-	public static $share_userhome_ldap = null;
-	public static $enabled = false;
+	private $keys = array();
 
-	public static function
+	public function
+	__get ($name)
+	{
+		return (isset($this->keys[$name]))
+			? $this->keys[$name]
+			: null;
+	}
+
+	public function
+	__set ($name, $value)
+	{
+		$this->keys[$name] = $value;
+	}
+
+	public function
+	__isset ($name)
+	{
+		return isset($this->keys[$name]);
+	}
+
+	public function
 	load ($cfgpath)
 	{
+		// These variables can be set by the config files:
 		$share_root = [];
 		$share_extra = [];
 		$share_archives = [];
 		$share_userhomes = null;
 		$share_userhome_ldap = null;
+		$ldap_groups = null;
 
-		// Dynamic shares config; these are optional includes:
-		$files =
-			[ "$cfgpath/share_root.inc.php"
-			, "$cfgpath/share_archives.inc.php"
-			, "$cfgpath/share_extra.inc.php"
-			, "$cfgpath/share_userhomes.inc.php"
-			] ;
-
-		foreach ($files as $file) {
-			if (!file_exists($file)) {
-				continue;
+		// Source all php files in the config dir:
+		if ($dir = opendir($cfgpath)) {
+			while (($entry = readdir($dir)) !== false) {
+				if (substr($entry, -4) === '.php') {
+					include "{$cfgpath}/{$entry}";
+				}
 			}
-			include $file;
+			closedir($dir);
 		}
-		self::$share_root = array_merge($share_root, $share_archives);
-		self::$share_extra = $share_extra;
-		self::$share_userhomes = $share_userhomes;
-		self::$share_userhome_ldap = $share_userhome_ldap;
+		$this->share_root = array_merge($share_root, $share_archives);
+		$this->share_extra = $share_extra;
+		$this->share_userhomes = $share_userhomes;
+		$this->share_userhome_ldap = $share_userhome_ldap;
+		$this->ldap_groups = $ldap_groups;
+		$this->enabled = (isset($enable_webfolders) && $enable_webfolders === true) ? true : false;
 
-		if (isset($enable_webfolders) && $enable_webfolders === true) {
-			self::$enabled = true;
+		// Some settings have historically been set with define();
+		// incorporate those too:
+		if (defined('SERVER_BASEDIR')) {
+			$this->server_basedir = SERVER_BASEDIR;
+		}
+		if (defined('SMBCLIENT_PATH')) {
+			$this->smbclient_path = SMBCLIENT_PATH;
+		}
+		if (defined('SMBCLIENT_EXTRA_OPTS')) {
+			$this->smbclient_extra_opts = SMBCLIENT_EXTRA_OPTS;
+		}
+		if (defined('ANONYMOUS_ALLOW')) {
+			$this->anonymous_allow = ANONYMOUS_ALLOW;
+		}
+		if (defined('ANONYMOUS_ONLY')) {
+			$this->anonymous_only = ANONYMOUS_ONLY;
+		}
+		if (defined('ETAG_SIZE_LIMIT')) {
+			$this->etag_size_limit = ETAG_SIZE_LIMIT;
+		}
+		if (defined('CACHE_USE')) {
+			$this->cache_use = CACHE_USE;
+		}
+		if (defined('CACHE_DIR')) {
+			$this->cache_dir = CACHE_DIR;
+		}
+		if (defined('LDAP_AUTH')) {
+			$this->ldap_auth = LDAP_AUTH;
 		}
 	}
 }

@@ -26,95 +26,29 @@ use Sabre\HTTP;
 
 include __DIR__ . '/vendor/autoload.php';
 
-// Load the main config file:
-include __DIR__ . '/config/config.inc.php';
-
-// Load the shares config into the static Config class:
-Config::load(__DIR__ . '/config');
+// Load config files:
+$config = new Config();
+$config->load(__DIR__ . '/config');
 
 // if this variable is not unambiguously true, bail out immediately:
-if (Config::$enabled !== true) {
+if ($config->enabled !== true) {
 	header('HTTP/1.1 404 Not Found');
 	die();
 }
 
 // The base URI is the SambaDAV root dir location on the server.
 // Check if the request was rewritten:
-$baseuri = (strpos($_SERVER['REQUEST_URI'], SERVER_BASEDIR) === 0) ? SERVER_BASEDIR : '/';
+$baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $config->server_basedir : '/';
 
-// If ANONYMOUS_ONLY is set to true in the config, don't require credentials;
-// also the 'logout' action makes no sense for an anonymous server:
-if (ANONYMOUS_ONLY)
-{
-	$user = false;
-	$pass = false;
+$auth = new Auth($config, $baseuri);
+
+// Run the authentication routines:
+if ($auth->exec() === false) {
+	return;
 }
-else {
-	$auth = new HTTP\BasicAuth();
-	$auth->setRealm('Web Folders');
 
-	// If no basic auth creds set, but the variables "user" and "pass" were
-	// posted to the page (e.g. from a/the login form), substitute those:
-	if (!isset($_SERVER['PHP_AUTH_USER']) && !isset($_SERVER['PHP_AUTH_PW'])) {
-		if (isset($_POST) && isset($_POST['user']) && isset($_POST['pass'])) {
-			$_SERVER['PHP_AUTH_USER'] = $_POST['user'];
-			$_SERVER['PHP_AUTH_PW'] = $_POST['pass'];
+Cache::init($config);
 
-			// HACK: dynamically change the request method to GET, because
-			// otherwise SambaDAV will throw an exception because there is
-			// no POST handler installed. This change causes SabreDAV to
-			// process this request just like any other basic auth login:
-			$_SERVER['REQUEST_METHOD'] = 'GET';
-		}
-	}
-
-	list($user, $pass) = $auth->getUserPass();
-	$user = ($user === null || $user === false || $user === '') ? false : $user;
-	$pass = ($pass === null || $pass === false || $pass === '') ? false : $pass;
-
-	// If you're tagged with 'logout' but you're not passing a username/pass, redirect to plain index:
-	if (isset($_GET['logout']) && ($user === false || $pass === false)) {
-		header("Location: $baseuri");
-		return;
-	}
-	// Otherwise, if you're tagged with 'logout', make sure the authentication is refused,
-	// to make the browser flush its cache:
-	if (isset($_GET['logout']) || (ANONYMOUS_ALLOW === false && ($user === false || $pass === false))) {
-		$auth->requireLogin();
-		$loginForm = new LoginForm($baseuri);
-		echo $loginForm->getBody();
-		return;
-	}
-	// If we allow anonymous logins, and we did not get all creds, skip authorization:
-	if (ANONYMOUS_ALLOW && ($user === false || $pass === false))
-	{
-		$user = false;
-		$pass = false;
-	}
-	else {
-		// Strip possible domain part off the username:
-		// WinXP likes to pass this sometimes:
-		if (($pos = strpos($user, '\\')) !== false) {
-			$user = substr($user, $pos + 1);
-		}
-		// Check LDAP for group membership:
-		// $ldap_groups is sourced from config/config.inc.php:
-		if (LDAP_AUTH) {
-			$ldap = new LDAP();
-
-			if (!isset(Config::$share_userhome_ldap)) {
-				Config::$share_userhome_ldap = false;
-			}
-			if ($ldap->verify($user, $pass, $ldap_groups, Config::$share_userhome_ldap) === false) {
-				sleep(2);
-				$auth->requireLogin();
-				$loginForm = new LoginForm($baseuri);
-				echo $loginForm->getBody();
-				return;
-			}
-		}
-	}
-}
 // Clean stale cache files every once in a blue moon:
 // Time-based throttling to prevent too-frequent rechecking;
 // Random-based throttling to prevent contention in the "available" second:
@@ -122,16 +56,11 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	Cache::clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new Directory(false, false, false, false, 'D', $user, $pass);
+$rootDir = new Directory($auth, $config, new URI(), null, 'D', null);
 
-// Pass LDAP userhome dir if available:
-if (isset($ldap) && $ldap->userhome !== false) {
-	$rootDir->setUserhome($ldap->userhome);
-}
-// Otherwise the userhome server if defined:
-else if ($user !== false && isset(Config::$share_userhomes) && Config::$share_userhomes) {
-	$rootDir->setUserhome(sprintf('\\\\%s\%s', Config::$share_userhomes, $user));
-}
+// Add userhome to root dir:
+$rootDir->setUserhome($auth->getUserhome());
+
 // The object tree needs in turn to be passed to the server class
 $server = new DAV\Server($rootDir);
 

@@ -1,23 +1,21 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV;
 
@@ -30,10 +28,10 @@ class SMB
 	const STATUS_SMBCLIENT_ERROR	= 4;
 
 	public static function
-	getShares ($server, $user, $pass)
+	getShares ($auth, $config, $uri)
 	{
-		$args = sprintf('--grepable --list %s', escapeshellarg("//$server"));
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
+		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, false) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -43,16 +41,16 @@ class SMB
 	}
 
 	public static function
-	ls ($user, $pass, $server, $share, $path)
+	ls ($auth, $config, $uri)
 	{
-		Log::trace("SMB::ls \"//$server/$share$path\"\n");
+		Log::trace("SMB::ls '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, 'ls');
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->path(), 'ls');
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -62,13 +60,13 @@ class SMB
 	}
 
 	public static function
-	du ($user, $pass, $server, $share)
+	du ($auth, $config, $uri)
 	{
-		Log::trace("SMB::du \"//$server/$share\"\n");
+		Log::trace("SMB::du '%s'\n", $uri->uriFull());
 
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd('/', 'du');
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->path(), 'du');
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -78,18 +76,15 @@ class SMB
 	}
 
 	public static function
-	get ($server, $share, $path, $file, $proc)
+	get ($uri, $proc)
 	{
-		Log::trace("SMB::get \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::get '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		if (self::checkFilename($file) === false) {
-			return self::STATUS_INVALID_NAME;
-		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, "get \"$file\" /proc/self/fd/5");
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->parentDir(), sprintf('get "%s" /proc/self/fd/5', $uri->name()));
 
 		// NB: because we want to return an open file handle, the caller needs
 		// to supply the Process class. Otherwise the proc and the fds are
@@ -104,19 +99,16 @@ class SMB
 	}
 
 	public static function
-	put ($user, $pass, $server, $share, $path, $file, $data, &$md5)
+	put ($auth, $config, $uri, $data, &$md5)
 	{
-		Log::trace("SMB::put \"//$server/$share$path/$file\"\n");
+		Log::trace("SMB::put '%s'\n", $uri->uriFull());
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		if (self::checkFilename($file) === false) {
-			return self::STATUS_INVALID_NAME;
-		}
-		$args = escapeshellarg("//$server/$share");
-		$scmd = self::makeCmd($path, "put /proc/self/fd/4 \"$file\"");
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
+		$args = escapeshellarg($uri->uriServerShare());
+		$scmd = self::makeCmd($uri->parentDir(), sprintf('put /proc/self/fd/4 "%s"', $uri->name()));
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -151,19 +143,19 @@ class SMB
 	}
 
 	private static function
-	cmdSimple ($user, $pass, $server, $share, $path, $cmd)
+	cmdSimple ($auth, $config, $uri, $path, $cmd)
 	{
 		// A helper function that sends a simple (silent)
 		// command to smbclient and reports the result status.
 
-		Log::trace("SMB::cmdSimple: \"//$server/$share$path\": $cmd\n");
+		Log::trace("SMB::cmdSimple: '%s' '%s'\n", $cmd, $path);
 
-		if (self::checkPathname($path) === false) {
+		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
 		}
-		$args = escapeshellarg("//$server/$share");
+		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = self::makeCmd($path, $cmd);
-		$proc = new \SambaDAV\SMBClient\Process($user, $pass);
+		$proc = new \SambaDAV\SMBClient\Process($auth, $config);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -183,81 +175,56 @@ class SMB
 		// and avoids the pitfalls associated with shell escaping. The code
 		// paths taken internally by smbclient are virtually identical anyway.
 
-		return "cd \"$path\"\n$cmd";
-	}
-
-	private static function
-	checkFilename ($filename)
-	{
-		// Windows filenames cannot contain " * : < > ? \ / |
-		// or characters 1..31. Also exclude \0 as a matter of course:
-		$bad = sprintf(
-			'"*:<>?\/|%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
-			 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-			10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-			20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-			30, 31
-		);
-		return (strpbrk($filename, $bad) === false);
-	}
-
-	private static function
-	checkPathname ($pathname)
-	{
-		// Exclude the same set of characters as above, with the exception of
-		// slashes. We need a sanitizer, because smbclient can be tricked into
-		// running local shell commands by feeding it a command starting with
-		// '!'. Ensure pathnames do not contain newlines and other special chars
-		// (ironically, '!' itself is allowed):
-		$bad = sprintf(
-			'"*:<>?|%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
-			 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-			10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-			20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-			30, 31
-		);
-		return (strpbrk($pathname, $bad) === false);
+		return sprintf("cd \"%s\"\n%s", $path, $cmd);
 	}
 
 	public static function
-	rm ($user, $pass, $server, $share, $path, $filename)
+	rm ($auth, $config, $uri)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rm \"$filename\"");
+		// $uri is the URI of the file to remove:
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
+			sprintf('rm "%s"', $uri->name()));
 	}
 
 	public static function
-	rename ($user, $pass, $server, $share, $path, $oldname, $newname)
+	rename ($auth, $config, $uri, $newname)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rename \"$oldname\" \"$newname\"");
+		// $uri is the URI of the file or dir to rename:
+		$newuri = clone $uri;
+		$newuri->rename($newname);
+		if ($newuri->isWinSafe() === false) {
+			return self::STATUS_INVALID_NAME;
+		}
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
+			sprintf('rename "%s" "%s"', $uri->name(), $newname));
 	}
 
 	public static function
-	mkdir ($user, $pass, $server, $share, $path, $dirname)
+	mkdir ($auth, $config, $uri, $dirname)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"mkdir \"$dirname\"");
+		// $uri is the URI of the dir in which to make the new dir:
+		$newuri = clone $uri;
+		$newuri->addParts($dirname);
+		if ($newuri->isWinSafe() === false) {
+			return self::STATUS_INVALID_NAME;
+		}
+		return self::cmdSimple($auth, $config, $uri, $uri->path(),
+			sprintf('mkdir "%s"', $dirname));
 	}
 
 	public static function
-	rmdir ($user, $pass, $server, $share, $path, $dirname)
+	rmdir ($auth, $config, $uri)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"rmdir \"$dirname\"");
+		// $uri is the URI of the dir to remove:
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
+			sprintf('rmdir "%s"', $uri->name()));
 	}
 
 	public static function
-	setMode ($user, $pass, $server, $share, $path, $filename, $modeflags)
+	setMode ($auth, $config, $uri, $modeflags)
 	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"setmode \"$filename\" \"$modeflags\"");
-	}
-
-	public static function
-	allInfo ($user, $pass, $server, $share, $path, $dirname)
-	{
-		return self::cmdSimple($user, $pass, $server, $share, $path,
-			"allinfo \"$dirname\"");
+		// $uri is the URI of the file to process:
+		return self::cmdSimple($auth, $config, $uri, $uri->parentDir(),
+			sprintf('setmode "%s" "%s"', $uri->name(), $modeflags));
 	}
 }

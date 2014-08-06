@@ -1,23 +1,21 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV\SMBClient;
 
@@ -25,26 +23,26 @@ class Process
 {
 	public $fd = false;
 	private $proc = false;
-	private $user = false;
-	private $pass = false;
+	private $auth = false;
 	private $anonymous = false;
+	private $config;
 
-	public function __construct ($user, $pass)
+	public function __construct ($auth, $config)
 	{
 		// Do anonymous login if ANONYMOUS_ONLY is set, or if ANONYMOUS_ALLOW
 		// is set and not all credentials are filled:
-		$this->anonymous = ANONYMOUS_ONLY || (ANONYMOUS_ALLOW && ($user === false || $pass === false));
+		$this->anonymous = $config->anonymous_only || ($config->anonymous_allow && ($auth->user === null || $auth->pass === null));
 
-		$this->user = $user;
-		$this->pass = $pass;
+		$this->auth = $auth;
+		$this->config = $config;
 	}
 
 	public function open ($args, $smbcmd)
 	{
 		// $args is assumed to have been shell-escaped by caller;
 		// append any extra smbclient options if specified:
-		if (defined('SMBCLIENT_EXTRA_OPTS') && is_string(SMBCLIENT_EXTRA_OPTS)) {
-			$args .= ' '.SMBCLIENT_EXTRA_OPTS;
+		if (isset($this->config->smbclient_extra_opts) && is_string($this->config->smbclient_extra_opts)) {
+			$args .= ' '.$this->config->smbclient_extra_opts;
 		}
 		$pipes = array
 			( 0 => array('pipe', 'r')	// child reads from stdin
@@ -64,8 +62,8 @@ class Process
 			) ;
 
 		$cmd = ($this->anonymous)
-			? sprintf('%s --debuglevel=0 --no-pass %s', SMBCLIENT_PATH, $args)
-			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', SMBCLIENT_PATH, $args);
+			? sprintf('%s --debuglevel=0 --no-pass %s', $this->config->smbclient_path, $args)
+			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
 
 		if (!($this->proc = proc_open($cmd, $pipes, $this->fd, '/', $env))) {
 			return false;
@@ -73,7 +71,7 @@ class Process
 		if (!is_resource($this->proc)) {
 			return false;
 		}
-		if (!$this->writeAuthFile($this->user, $this->pass)) {
+		if (!$this->writeAuthFile($this->auth->sambaUsername(), $this->auth->pass)) {
 			return false;
 		}
 		if (!$this->writeCommand($smbcmd)) {
@@ -100,7 +98,7 @@ class Process
 	private function writeAuthFile ($user, $pass)
 	{
 		if (!$this->anonymous) {
-			$creds = ($pass === false)
+			$creds = ($pass === null)
 				? "username=$user"
 				: "username=$user\npassword=$pass";
 

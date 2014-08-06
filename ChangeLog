@@ -1,3 +1,10 @@
+- Auth: add this class to provide centralized auth handling;
+- Config: load all PHP files from config dir, not just the "well known" ones;
+- Implement getLastModified for directories;
+- Deleting nonempty folders now works; first delete children recursively;
+- smbclient: honor the 'N' flag when encountered for NORMAL files;
+- Show actual server and share in title of Browser plugin, not webserver path;
+- Use new URI class for handling URI's, remove manual string manipulations;
 - Move all of SambaDAV to a PSR-0 compliant dir structure;
 - Implement own Browser plugin; remove patch dir;
 - MD5 streamfilter: place in own class, avoid global variable;

@@ -1,0 +1,8 @@
+<phpunit
+  colors="true"
+  bootstrap="../src/vendor/autoload.php"
+  >
+  <testsuite name="sambadav">
+    <directory>SambaDAV</directory>
+  </testsuite>
+</phpunit>

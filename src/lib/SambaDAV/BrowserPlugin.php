@@ -44,7 +44,7 @@ class BrowserPlugin extends DAV\Browser\Plugin
 "  </head>
   <body>
     <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>
-    <h1>Index for {$this->escapeHTML($path)}/</h1>
+    <h1>{$this->escapeHTML($parent->uri->uriFull())}</h1>
     <table id=\"actions\">
       <tbody>";
 

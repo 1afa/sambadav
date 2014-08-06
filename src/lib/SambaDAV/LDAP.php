@@ -1,23 +1,21 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV;
 
@@ -28,10 +26,10 @@ class LDAP
 	private $basedn = false;
 	public $userhome = false;
 
-	public function verify ($user, $pass, $ldap_groups = false, $prop_userhome = false)
+	public function verify ($user, $pass, $ldap_groups = null, $prop_userhome = null)
 	{
-		if ($user === false || $user === ''
-		 || $pass === false || $pass === '') {
+		if ($user === null || $user === ''
+		 || $pass === null || $pass === '') {
 			return false;
 		}
 		if ($this->getParams() === false) {
@@ -104,7 +102,7 @@ class LDAP
 
 	private function groupSearch ($user, $groups)
 	{
-		if ($groups === false) {
+		if ($groups === null) {
 			return true;
 		}
 		$searchdn = sprintf('ou=Groups,%s', $this->escape($this->basedn));
@@ -118,7 +116,7 @@ class LDAP
 
 	private function userhomeSearch ($user, $prop_userhome)
 	{
-		if ($prop_userhome === false) {
+		if ($prop_userhome === null) {
 			return true;
 		}
 		// If $prop_userhome is set, try to find the given property;

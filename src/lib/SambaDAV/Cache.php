@@ -1,39 +1,46 @@
 <?php	// $Format:SambaDAV: commit %h @ %cd$
-/*
- * Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Project page: <https://github.com/bokxing-it/sambadav/>
- *
- */
+
+# Copyright (C) 2013, 2014  Bokxing IT, http://www.bokxing-it.nl
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Project page: <https://github.com/bokxing-it/sambadav/>
 
 namespace SambaDAV;
 
-// This file is used as a lockfile and timestamp for the cache cleanup process,
-// so that no cache writes can be done during a cleanup, and vice versa:
-define('CACHE_CLEAN_SEMAPHORE', CACHE_DIR.'/last_cleaned');
-
 class Cache
 {
+	public static $config = null;
+
 	// Stub out the constructor so this static class can never be instantiated:
 	private function __construct () {}
 
-	private static function
-	filename ($user_name, $function, $args)
+	public static function
+	init ($config)
 	{
-		return CACHE_DIR.'/'.sha1('webfolders'.$user_name.'webfolders'.$function.'webfolders'.join('', $args).'webfolders', false);
+		// This file is used as a lockfile and timestamp for the cache cleanup process,
+		// so that no cache writes can be done during a cleanup, and vice versa:
+		$config->cache_clean_semaphore = $config->cache_dir.'/last_cleaned';
+
+		self::$config = $config;
+	}
+
+	private static function
+	filename ($auth, $function, $uri)
+	{
+		// Filename is unique for function, URI and username:
+		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $function . $uri->uriFull(), false));
 	}
 
 	private static function
@@ -119,8 +126,8 @@ class Cache
 	private static function
 	write ($filename, $iv_size, $user_key, $data)
 	{
-		if (file_exists(CACHE_DIR) === false) {
-			mkdir(CACHE_DIR, 0700, false);
+		if (file_exists(self::$config->cache_dir) === false) {
+			mkdir(self::$config->cache_dir, 0700, false);
 		}
 		umask(0177);	// Create all files -rw------
 
@@ -178,11 +185,11 @@ class Cache
 	}
 
 	public static function
-	get ($function, $args = array(), $user_name, $user_key, $timeout)
+	get ($function, $args = array(), $auth, $uri, $timeout)
 	{
 		// $user_key is a unique per-user value, used to save lookup
 		// results under that user's identifier.
-		if (CACHE_USE === false) {
+		if (self::$config->cache_use === false) {
 			return call_user_func_array($function, $args);
 		}
 		if (extension_loaded('mcrypt') === false) {
@@ -191,7 +198,11 @@ class Cache
 		if (($iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC)) === false) {
 			return call_user_func_array($function, $args);
 		}
-		$filename = self::filename($user_name, $function, $args);
+		$filename = self::filename($auth, $function, $uri);
+
+		// The key we use to encrypt the data:
+		$user_key = $auth->pass . $function . $uri->uriFull();
+
 		if (self::read($filename, $iv_size, $user_key, $timeout, $data)) {
 			return $data;
 		}
@@ -202,22 +213,22 @@ class Cache
 	}
 
 	public static function
-	destroy ($function, $args = array(), $user_name)
+	destroy ($function, $args = array(), $auth, $uri)
 	{
-		if (CACHE_USE === false) {
+		if (self::$config->cache_use === false) {
 			return;
 		}
 		// Try to get blocking lock on cache clean semaphore file:
 		// If this call fails, just steam ahead regardless:
 		$fd = self::clean_semaphore_open(true);
-		@unlink(self::filename($user_name, $function, $args));
+		@unlink(self::filename($auth, $function, $uri));
 		if ($fd) self::clean_semaphore_close($fd);
 	}
 
 	public static function
 	clean ()
 	{
-		if (CACHE_USE === false) {
+		if (self::$config->cache_use === false) {
 			return false;
 		}
 		// Must acquire the cache clean semaphore, else assume
@@ -226,7 +237,7 @@ class Cache
 			return false;
 		}
 		// Remove files older than 60 seconds:
-		if (($dir = opendir(CACHE_DIR)) === false) {
+		if (($dir = opendir(self::$config->cache_dir)) === false) {
 			self::clean_semaphore_close($fd);
 			return false;
 		}
@@ -234,7 +245,7 @@ class Cache
 			if ($entry == '.' || $entry == '..' || $entry == 'last_cleaned') {
 				continue;
 			}
-			$file = CACHE_DIR."/$entry";
+			$file = self::$config->cache_dir."/$entry";
 			if ((time() - filemtime($file)) > 60) {
 				unlink($file);
 			}
@@ -277,7 +288,7 @@ class Cache
 		// Try to open the semaphore file in append mode.
 		// This can fail if there is no cache directory, in which case
 		// we don't need to do cleanup anyway.
-		if (($fd = @fopen(CACHE_CLEAN_SEMAPHORE, 'a')) === false) {
+		if (($fd = @fopen(self::$config->cache_clean_semaphore, 'a')) === false) {
 			return false;
 		}
 		// In blocking mode, try to obtain exclusive lock:
