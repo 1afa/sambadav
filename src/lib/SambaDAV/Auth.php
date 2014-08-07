@@ -69,24 +69,28 @@ class Auth
 		if ($this->user === false || $this->user === '') $this->user = null;
 		if ($this->pass === false || $this->pass === '') $this->pass = null;
 
-		// If you're tagged with 'logout' but you're not passing a
-		// username/pass, redirect to plain index:
-		if (isset($_GET['logout']) && ($this->user === null || $this->pass === null)) {
-			header("Location: {$this->baseuri}");
+		if (isset($_GET['logout']))
+		{
+			// If you're tagged with 'logout' but you're not passing a
+			// username/pass, redirect to plain index:
+			if ($this->user === null || $this->pass === null) {
+				header("Location: {$this->baseuri}");
+				return false;
+			}
+			// Otherwise, if you're tagged with 'logout', make sure
+			// the authentication is refused, to make the browser
+			// flush its cache:
+			$this->showLoginForm($auth);
 			return false;
 		}
-		// Otherwise, if you're tagged with 'logout', make sure the authentication is refused,
-		// to make the browser flush its cache:
-		if (isset($_GET['logout']) || ($this->config->anonymous_allow === false && ($this->user === null || $this->pass === null))) {
-			$auth->requireLogin();
-			$loginForm = new LoginForm($this->baseuri);
-			echo $loginForm->getBody();
+		// If we did not get all creds, check whether that's okay or not:
+		if ($this->user === null || $this->pass === null) {
+			if ($this->config->anonymous_allow) {
+				$this->anonymous = true;
+				return true;
+			}
+			$this->showLoginForm($auth);
 			return false;
-		}
-		// If we allow anonymous logins, and we did not get all creds, skip authorization:
-		if ($this->config->anonymous_allow && ($this->null === null || $this->pass === null)) {
-			$this->anonymous = true;
-			return true;
 		}
 		// Strip possible domain part off the username:
 		// WinXP likes to pass this sometimes:
@@ -99,14 +103,16 @@ class Auth
 				$this->userhome = new URI($this->config->share_userhomes, $this->user);
 			}
 		}
-		if ($this->checkLdap($auth) === false) {
+		if ($this->checkLdap() === false) {
+			sleep(2);
+			$this->showLoginForm($auth);
 			return false;
 		}
 		return true;
 	}
 
 	private function
-	checkLdap ($auth)
+	checkLdap ()
 	{
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
@@ -116,16 +122,20 @@ class Auth
 		$ldap = new LDAP();
 
 		if ($ldap->verify($this->ldapUsername(), $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
-			sleep(2);
-			$auth->requireLogin();
-			$loginForm = new LoginForm($this->baseuri);
-			echo $loginForm->getBody();
 			return false;
 		}
 		if ($ldap->userhome !== false) {
 			$this->userhome = new URI($ldap->userhome);
 		}
 		return true;
+	}
+
+	private function
+	showLoginForm ($auth)
+	{
+		$auth->requireLogin();
+		$loginForm = new LoginForm($this->baseuri);
+		echo $loginForm->getBody();
 	}
 
 	public function
