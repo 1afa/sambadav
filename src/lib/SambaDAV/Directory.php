@@ -246,7 +246,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function getQuotaInfo ()
 	{
-		Log::trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull);
+		Log::trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull());
 
 		// NB: Windows 7 uses/needs this method. Must return array.
 		// We refuse to do the actual lookup, because:
