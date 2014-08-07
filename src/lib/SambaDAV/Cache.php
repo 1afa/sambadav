@@ -39,8 +39,12 @@ class Cache
 	private static function
 	filename ($auth, $function, $uri)
 	{
-		// Filename is unique for function, URI and username:
-		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $function . $uri->uriFull(), false));
+		// Filename is unique for function, URI, username and password.
+		// Include password here to avoid decode errors when someone
+		// logs in with a valid username and wrong password. If the
+		// password would not contribute to the filename, we would try
+		// to open the existing cache file and get a decode error:
+		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $auth->pass . $function . $uri->uriFull(), false));
 	}
 
 	private static function

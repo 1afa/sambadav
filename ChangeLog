@@ -1,3 +1,4 @@
+- Cache: password also contributes to cache file name;
 - Auth: make this class the maintainer of the 'is anonymous' flag;
 
 * Wed Aug 06 2014 Alfred Klomp <alfred@1afa.com> v0.3.0
