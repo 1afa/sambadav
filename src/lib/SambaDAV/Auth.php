@@ -25,6 +25,7 @@ class Auth
 {
 	public $user = null;
 	public $pass = null;
+	public $anonymous = false;
 
 	private $baseuri;
 	private $config;
@@ -43,6 +44,7 @@ class Auth
 		// If ANONYMOUS_ONLY is set to true in the config, don't require credentials;
 		// also the 'logout' action makes no sense for an anonymous server:
 		if ($this->config->anonymous_only) {
+			$this->anonymous = true;
 			return true;
 		}
 		$auth = new HTTP\BasicAuth();
@@ -83,6 +85,7 @@ class Auth
 		}
 		// If we allow anonymous logins, and we did not get all creds, skip authorization:
 		if ($this->config->anonymous_allow && ($this->null === null || $this->pass === null)) {
+			$this->anonymous = true;
 			return true;
 		}
 		// Strip possible domain part off the username:

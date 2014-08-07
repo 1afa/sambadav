@@ -24,15 +24,10 @@ class Process
 	public $fd = false;
 	private $proc = false;
 	private $auth = false;
-	private $anonymous = false;
 	private $config;
 
 	public function __construct ($auth, $config)
 	{
-		// Do anonymous login if ANONYMOUS_ONLY is set, or if ANONYMOUS_ALLOW
-		// is set and not all credentials are filled:
-		$this->anonymous = $config->anonymous_only || ($config->anonymous_allow && ($auth->user === null || $auth->pass === null));
-
 		$this->auth = $auth;
 		$this->config = $config;
 	}
@@ -61,7 +56,7 @@ class Process
 			, 'LC_ALL' => 'en_US.UTF-8'
 			) ;
 
-		$cmd = ($this->anonymous)
+		$cmd = ($this->auth->anonymous)
 			? sprintf('%s --debuglevel=0 --no-pass %s', $this->config->smbclient_path, $args)
 			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
 
@@ -71,7 +66,7 @@ class Process
 		if (!is_resource($this->proc)) {
 			return false;
 		}
-		if (!$this->writeAuthFile($this->auth->sambaUsername(), $this->auth->pass)) {
+		if (!$this->writeAuthFile()) {
 			return false;
 		}
 		if (!$this->writeCommand($smbcmd)) {
@@ -95,14 +90,19 @@ class Process
 		return $this->fd[5];
 	}
 
-	private function writeAuthFile ($user, $pass)
+	private function writeAuthFile ()
 	{
-		if (!$this->anonymous) {
-			$creds = ($pass === null)
-				? "username=$user"
-				: "username=$user\npassword=$pass";
+		if ($this->auth->anonymous === false)
+		{
+			$creds = array();
 
-			if (fwrite($this->fd[3], $creds) === false) {
+			if (($user = $this->auth->sambaUsername()) !== null) {
+				$creds[] = "username=$user";
+			}
+			if (($pass = $this->auth->pass) !== null) {
+				$creds[] = "password=$pass";
+			}
+			if (fwrite($this->fd[3], implode("\n", $creds)) === false) {
 				fclose($this->fd[3]);
 				return false;
 			}

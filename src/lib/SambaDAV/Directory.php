@@ -394,8 +394,7 @@ class Directory extends DAV\FSExt\Directory
 			$entries[$entry[0]] = array($entry[0], false);
 		}
 		// The user's home directory gets a folder with the name of the *user*:
-		// User can be false if we allow anonymous logins, in which case ignore:
-		if ($this->auth->user !== null && $this->userhome !== null) {
+		if ($this->auth->anonymous === false && $this->userhome !== null) {
 			if ($this->userhome->isServerRoot()) {
 				$entries[$this->auth->user] = array($this->userhome->server(), $this->auth->user);
 			}
@@ -421,7 +420,7 @@ class Directory extends DAV\FSExt\Directory
 			if ($share === false || $share === null || $share === '') {
 				continue;
 			}
-			$entries[$share] = 1;
+			$entries[$share] = true;
 		}
 		foreach ($this->config->share_extra as $entry) {
 			$server = (isset($entry[0])) ? $entry[0] : null;
@@ -430,7 +429,7 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			if ($share !== false && $share !== null && $share !== '') {
-				$entries[$share] = 1;
+				$entries[$share] = true;
 				continue;
 			}
 			// Only our server name given in $share_extra;
@@ -445,17 +444,17 @@ class Directory extends DAV\FSExt\Directory
 				continue;
 			}
 			foreach ($shares as $share) {
-				$entries[$share] = 1;
+				$entries[$share] = true;
 			}
 		}
 		// User's home share is on this server?
-		if ($this->auth->user !== null && $this->userhome !== null) {
-			if ($this->userhome->server() !== null && $this->userhome->server() == $this->uri->server()) {
-				if ($this->userhome->share() === null) {
-					$entries[$this->auth->user] = 1;
+		if ($this->auth->anonymous === false && $this->userhome !== null) {
+			if ($this->userhome->server() === $this->uri->server()) {
+				if ($this->userhome->isServerRoot() === null) {
+					$entries[$this->auth->user] = true;
 				}
 				else {
-					$entries[$this->userhome->share()] = 1;
+					$entries[$this->userhome->share()] = true;
 				}
 			}
 		}
