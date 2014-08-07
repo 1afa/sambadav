@@ -102,6 +102,9 @@ class Process
 			if (($pass = $this->auth->pass) !== null) {
 				$creds[] = "password=$pass";
 			}
+			if (($domain = $this->auth->sambaDomain()) !== null) {
+				$creds[] = "domain=$domain";
+			}
 			if (fwrite($this->fd[3], implode("\n", $creds)) === false) {
 				fclose($this->fd[3]);
 				return false;

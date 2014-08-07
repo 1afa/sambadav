@@ -141,6 +141,12 @@ class Auth
 	}
 
 	public function
+	sambaDomain ()
+	{
+		return null;
+	}
+
+	public function
 	getUserhome ()
 	{
 		return $this->userhome;
