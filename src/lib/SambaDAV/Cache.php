@@ -37,14 +37,14 @@ class Cache
 	}
 
 	private static function
-	filename ($auth, $function, $uri)
+	filename ($auth, $callableName, $uri)
 	{
 		// Filename is unique for function, URI, username and password.
 		// Include password here to avoid decode errors when someone
 		// logs in with a valid username and wrong password. If the
 		// password would not contribute to the filename, we would try
 		// to open the existing cache file and get a decode error:
-		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $auth->pass . $function . $uri->uriFull(), false));
+		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $auth->pass . $callableName . $uri->uriFull(), false));
 	}
 
 	private static function
@@ -189,43 +189,49 @@ class Cache
 	}
 
 	public static function
-	get ($function, $args = array(), $auth, $uri, $timeout)
+	get ($callable, $args = array(), $auth, $uri, $timeout)
 	{
 		// $user_key is a unique per-user value, used to save lookup
 		// results under that user's identifier.
 		if (self::$config->cache_use === false) {
-			return call_user_func_array($function, $args);
+			return call_user_func_array($callable, $args);
 		}
 		if (extension_loaded('mcrypt') === false) {
-			return call_user_func_array($function, $args);
+			return call_user_func_array($callable, $args);
 		}
 		if (($iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC)) === false) {
-			return call_user_func_array($function, $args);
+			return call_user_func_array($callable, $args);
 		}
-		$filename = self::filename($auth, $function, $uri);
+		if (is_callable($callable, false, $callableName) === false) {
+			return call_user_func_array($callable, $args);
+		}
+		$filename = self::filename($auth, $callableName, $uri);
 
 		// The key we use to encrypt the data:
-		$user_key = $auth->pass . $function . $uri->uriFull();
+		$user_key = $auth->pass . $callableName . $uri->uriFull();
 
 		if (self::read($filename, $iv_size, $user_key, $timeout, $data)) {
 			return $data;
 		}
-		// Else run the function, store the result in the cache:
-		$data = call_user_func_array($function, $args);
+		// Else run the callable, store the result in the cache:
+		$data = call_user_func_array($callable, $args);
 		self::write($filename, $iv_size, $user_key, $data);
 		return $data;
 	}
 
 	public static function
-	destroy ($function, $args = array(), $auth, $uri)
+	destroy ($callable, $args = array(), $auth, $uri)
 	{
 		if (self::$config->cache_use === false) {
+			return;
+		}
+		if (is_callable($callable, false, $callableName) === false) {
 			return;
 		}
 		// Try to get blocking lock on cache clean semaphore file:
 		// If this call fails, just steam ahead regardless:
 		$fd = self::clean_semaphore_open(true);
-		@unlink(self::filename($auth, $function, $uri));
+		@unlink(self::filename($auth, $callableName, $uri));
 		if ($fd) self::clean_semaphore_close($fd);
 	}
 
