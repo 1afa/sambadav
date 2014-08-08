@@ -19,55 +19,56 @@
 
 namespace SambaDAV;
 
-class Cache
+abstract class Cache
 {
-	public static $config = null;
+	// Write $data to cache as $key, good for $timeout seconds.
+	// Returns true/false.
+	abstract protected function write ($key, $data, $timeout);
 
-	// Stub out the constructor so this static class can never be instantiated:
-	private function __construct () {}
+	// Read $data from cache as $key, if younger than timeout.
+	// Returns true/false.
+	abstract protected function read ($key, &$data, $timeout);
 
-	public static function
-	init ($config)
+	// Delete data under $key from cache:
+	abstract protected function delete ($key);
+
+	// Run a cleaning pass on the cache:
+	abstract protected function clean ();
+
+	private function
+	key ($auth, $callableName, $uri)
 	{
-		// This file is used as a lockfile and timestamp for the cache cleanup process,
-		// so that no cache writes can be done during a cleanup, and vice versa:
-		$config->cache_clean_semaphore = $config->cache_dir.'/last_cleaned';
-
-		self::$config = $config;
-	}
-
-	private static function
-	filename ($auth, $callableName, $uri)
-	{
-		// Filename is unique for function, URI, username and password.
+		// Key is unique for function, URI, username and password.
 		// Include password here to avoid decode errors when someone
 		// logs in with a valid username and wrong password. If the
 		// password would not contribute to the filename, we would try
 		// to open the existing cache file and get a decode error:
-		return sprintf('%s/%s', self::$config->cache_dir, sha1($auth->user . $auth->pass . $callableName . $uri->uriFull(), false));
+		return sha1($auth->user . $auth->pass . $callableName . $uri->uriFull(), false);
 	}
 
-	private static function
-	readfd ($fd, $iv_size, $user_key, $timeout, &$data)
+	public function
+	serialize ($data, &$raw, $iv_size, $user_key)
 	{
-		// Get file stats:
-		if (($stat = fstat($fd)) === false) {
+		// Serialize the raw data:
+		if (($ser = serialize($data)) === false) {
 			return false;
 		}
-		// If file is too old, data is stale:
-		if (time() - $stat['mtime'] > $timeout) {
+		// Compress:
+		if (($com = gzcompress($ser)) === false) {
 			return false;
 		}
-		// If file is empty, data is invalid:
-		if ($stat['size'] == 0) {
+		// Encrypt:
+		if (($raw = $this->encrypt($com, $iv_size, $user_key)) === false) {
 			return false;
 		}
-		// Read file contents:
-		if (($raw = fread($fd, $stat['size'])) === false) {
-			return false;
-		}
+		return true;
+	}
+
+	public function
+	unserialize (&$data, $raw, $iv_size, $user_key)
+	{
 		// Decode:
-		if (($dec = self::dec($raw, $iv_size, $user_key)) === false) {
+		if (($dec = $this->decrypt($raw, $iv_size, $user_key)) === false) {
 			return false;
 		}
 		// Uncompress:
@@ -81,82 +82,8 @@ class Cache
 		return true;
 	}
 
-	private static function
-	read ($filename, $iv_size, $user_key, $timeout, &$data)
-	{
-		if (($fd = @fopen($filename, 'r')) === false) {
-			return false;
-		}
-		if (flock($fd, LOCK_SH) === false) {
-			fclose($fd);
-			return false;
-		}
-		// Try to read into $data:
-		$result = self::readfd($fd, $iv_size, $user_key, $timeout, $data);
-
-		flock($fd, LOCK_UN);
-		fclose($fd);
-
-		return $result;
-	}
-
-	private static function
-	writefd ($fd, $iv_size, $user_key, $data)
-	{
-		// Serialize the raw data:
-		if (($ser = serialize($data)) === false) {
-			return false;
-		}
-		// Compress:
-		if (($com = gzcompress($ser)) === false) {
-			return false;
-		}
-		// Encrypt:
-		if (($enc = self::enc($com, $iv_size, $user_key)) === false) {
-			return false;
-		}
-		// Discard data, place file pointer at offset 0:
-		if (ftruncate($fd, 0) === false) {
-			return false;
-		}
-		// Write to file:
-		if ((fwrite($fd, $enc)) === false) {
-			return false;
-		}
-		fflush($fd);
-		return true;
-	}
-
-	private static function
-	write ($filename, $iv_size, $user_key, $data)
-	{
-		if (file_exists(self::$config->cache_dir) === false) {
-			mkdir(self::$config->cache_dir, 0700, false);
-		}
-		umask(0177);	// Create all files -rw------
-
-		// There is a slight race condition here with the cache cleanup
-		// processes: if we fopen() a stale file, the cleanup process could
-		// unlink it before we manage to modify its mtime by calling
-		// ftruncate(). The worst that can happen is a potential cache miss on
-		// the next lookup. That's not worth serializing cache access for.
-		if (($fd = fopen($filename, 'a')) === false) {
-			return false;
-		}
-		if (flock($fd, LOCK_EX) === false) {
-			fclose($fd);
-			return false;
-		}
-		$result = self::writefd($fd, $iv_size, $user_key, $data);
-
-		flock($fd, LOCK_UN);
-		fclose($fd);
-
-		return $result;
-	}
-
-	private static function
-	enc ($data, $iv_size, $user_key)
+	public function
+	encrypt ($data, $iv_size, $user_key)
 	{
 		if (($iv = mcrypt_create_iv($iv_size, MCRYPT_RAND)) === false) {
 			return false;
@@ -171,8 +98,8 @@ class Cache
 		return $iv . $salt . mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $data, MCRYPT_MODE_CBC, $iv);
 	}
 
-	private static function
-	dec ($data, $iv_size, $user_key)
+	public function
+	decrypt ($data, $iv_size, $user_key)
 	{
 		// Binary MD5 hash is 16 bytes long:
 		$salt_size = 16;
@@ -188,14 +115,9 @@ class Cache
 		return mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, substr($data, $iv_size + $salt_size), MCRYPT_MODE_CBC, $iv);
 	}
 
-	public static function
+	public function
 	get ($callable, $args = array(), $auth, $uri, $timeout)
 	{
-		// $user_key is a unique per-user value, used to save lookup
-		// results under that user's identifier.
-		if (self::$config->cache_use === false) {
-			return call_user_func_array($callable, $args);
-		}
 		if (extension_loaded('mcrypt') === false) {
 			return call_user_func_array($callable, $args);
 		}
@@ -205,119 +127,33 @@ class Cache
 		if (is_callable($callable, false, $callableName) === false) {
 			return call_user_func_array($callable, $args);
 		}
-		$filename = self::filename($auth, $callableName, $uri);
+		$key = $this->key($auth, $callableName, $uri);
 
 		// The key we use to encrypt the data:
 		$user_key = $auth->pass . $callableName . $uri->uriFull();
 
-		if (self::read($filename, $iv_size, $user_key, $timeout, $data)) {
-			return $data;
+		// First try to get the data from the cache:
+		if ($this->read($key, $raw, $timeout)) {
+			if ($this->unserialize($data, $raw, $iv_size, $user_key)) {
+				return $data;
+			}
 		}
-		// Else run the callable, store the result in the cache:
+		// If that failed, run the function, store the result:
 		$data = call_user_func_array($callable, $args);
-		self::write($filename, $iv_size, $user_key, $data);
+
+		// Serialize the data, try to store it:
+		if ($this->serialize($data, $raw, $iv_size, $user_key) !== false) {
+			$this->write($key, $raw, $timeout);
+		}
 		return $data;
 	}
 
-	public static function
-	destroy ($callable, $args = array(), $auth, $uri)
+	public function
+	remove ($callable, $auth, $uri)
 	{
-		if (self::$config->cache_use === false) {
-			return;
-		}
 		if (is_callable($callable, false, $callableName) === false) {
-			return;
-		}
-		// Try to get blocking lock on cache clean semaphore file:
-		// If this call fails, just steam ahead regardless:
-		$fd = self::clean_semaphore_open(true);
-		@unlink(self::filename($auth, $callableName, $uri));
-		if ($fd) self::clean_semaphore_close($fd);
-	}
-
-	public static function
-	clean ()
-	{
-		if (self::$config->cache_use === false) {
 			return false;
 		}
-		// Must acquire the cache clean semaphore, else assume
-		// that another cleanup thread is already running:
-		if (($fd = self::clean_semaphore()) === false) {
-			return false;
-		}
-		// Remove files older than 60 seconds:
-		if (($dir = opendir(self::$config->cache_dir)) === false) {
-			self::clean_semaphore_close($fd);
-			return false;
-		}
-		while (($entry = readdir($dir)) !== false) {
-			if ($entry == '.' || $entry == '..' || $entry == 'last_cleaned') {
-				continue;
-			}
-			$file = self::$config->cache_dir."/$entry";
-			if ((time() - filemtime($file)) > 60) {
-				unlink($file);
-			}
-		}
-		closedir($dir);
-		// ftruncate() updates the mtime on the semaphore file:
-		ftruncate($fd, 0);
-		self::clean_semaphore_close($fd);
-		return true;
-	}
-
-	private static function
-	clean_semaphore ()
-	{
-		// Returns false if we are not eligible to clean (semaphore
-		// file is locked, or timestamp too recent), else returns fd
-		// of semaphore file.
-		if (($fd = self::clean_semaphore_open(false)) === false) {
-			return false;
-		}
-		// Get last modification time:
-		if (($stat = fstat($fd)) === false) {
-			self::clean_semaphore_close($fd);
-			return false;
-		}
-		// File modification time too recent?
-		if ((time() - $stat['mtime']) < 60) {
-			self::clean_semaphore_close($fd);
-			return false;
-		}
-		return $fd;
-	}
-
-	private static function
-	clean_semaphore_open ($block)
-	{
-		// Returns the fd of the semaphore file in locked state if we
-		// were able to acquire it, else false.
-
-		// Try to open the semaphore file in append mode.
-		// This can fail if there is no cache directory, in which case
-		// we don't need to do cleanup anyway.
-		if (($fd = @fopen(self::$config->cache_clean_semaphore, 'a')) === false) {
-			return false;
-		}
-		// In blocking mode, try to obtain exclusive lock:
-		if ($block && flock($fd, LOCK_EX)) {
-			return $fd;
-		}
-		// In non-blocking mode, try to obtain exclusive lock:
-		if (flock($fd, LOCK_EX | LOCK_NB, $wouldblock) && !$wouldblock) {
-			return $fd;
-		}
-		// Could not lock file, return unsuccessfully:
-		fclose($fd);
-		return false;
-	}
-
-	private static function
-	clean_semaphore_close ($fd)
-	{
-		flock($fd, LOCK_UN);
-		fclose($fd);
+		return $this->delete($this->key($auth, $callableName, $uri));
 	}
 }
