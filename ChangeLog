@@ -1,3 +1,4 @@
+- Cache: add unit tests;
 - Cache: no longer static, and split in base class and implementors;
 - Directory: fix typo in logging code;
 - Cache: password also contributes to cache file name;
