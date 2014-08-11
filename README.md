@@ -36,6 +36,7 @@ that you can edit, copy, move, delete and rename files and directories just
 like they were on a local network share. All this over simple HTTPS and without
 setting up a VPN.
 
+[![Build Status](https://travis-ci.org/bokxing-it/sambadav.svg)](https://travis-ci.org/bokxing-it/sambadav)
 
 ## How does it work?
 
