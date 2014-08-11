@@ -1,3 +1,4 @@
+* Mon Aug 11 2014 Alfred Klomp <alfred@1afa.com> v0.3.1
 - Travis CI: add jobfile for automated testing;
 - Cache: add unit tests;
 - Cache: no longer static, and split in base class and implementors;
