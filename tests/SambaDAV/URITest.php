@@ -79,6 +79,15 @@ class URITest extends \PHPUnit_Framework_TestCase
 	}
 
 	public function
+	testAddParts_D ()
+	{
+		$uri = new URI('\\\\server\\share\\path');
+		$uri->addParts('\\to\\\\');
+		$uri->addParts('file\\');
+		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
+	}
+
+	public function
 	testRename_A ()
 	{
 		$uri = new URI('server', 'share', '/path/to/file');

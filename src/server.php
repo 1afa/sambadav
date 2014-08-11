@@ -47,16 +47,19 @@ if ($auth->exec() === false) {
 	return;
 }
 
-Cache::init($config);
+// Create cache object:
+$cache = ($config->cache_use)
+	? new Cache\Filesystem($config->cache_dir)
+	: new Cache\Null();
 
 // Clean stale cache files every once in a blue moon:
 // Time-based throttling to prevent too-frequent rechecking;
 // Random-based throttling to prevent contention in the "available" second:
 if ((time() % 5) == 0 && rand(0, 9) == 8) {
-	Cache::clean();
+	$cache->clean();
 }
 // No server, share and path known in root dir:
-$rootDir = new Directory($auth, $config, new URI(), null, 'D', null);
+$rootDir = new Directory($auth, $config, $cache, new URI(), null, 'D', null);
 
 // Add userhome to root dir:
 $rootDir->setUserhome($auth->getUserhome());

@@ -1,3 +1,10 @@
+- Travis CI: add jobfile for automated testing;
+- Cache: add unit tests;
+- Cache: no longer static, and split in base class and implementors;
+- Directory: fix typo in logging code;
+- Cache: password also contributes to cache file name;
+- Auth: make this class the maintainer of the 'is anonymous' flag;
+
 * Wed Aug 06 2014 Alfred Klomp <alfred@1afa.com> v0.3.0
 - Auth: add this class to provide centralized auth handling;
 - Config: load all PHP files from config dir, not just the "well known" ones;
