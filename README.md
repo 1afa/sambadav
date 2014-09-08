@@ -373,7 +373,7 @@ comments in the file itself for more information. Some notes:
   With a "real" WebDAV client, you can pass a username and password in the very
   first request and get authenticated access that way.
 
-- `cache_use` enables the disk cache. If you set this to FALSE, nothing will be
+- `cache_use` enables the disk cache. If you set this to `false`, nothing will be
   cached and performance will be rather slow (everything's an expensive call to
   `smbclient`). Note that file contents are never cached, only metadata such as
   directory listings.
@@ -615,15 +615,8 @@ specifics.
 
 ## Troubleshooting
 
-- Is your `smbclient` install working correctly? SambaDAV currently only
-  supports the version bundled with Samba 3.x. You can check the `smbclient`
-  version with:
-
-```sh
-smbclient --version
-```
-
-  It should have major version 3. Do you get the expected output when you execute:
+- Is your `smbclient` install working correctly? Do you get the expected output
+  when you execute:
 
 ```sh
 # Lookup shares list as guest:
