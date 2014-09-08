@@ -124,7 +124,7 @@ class Auth
 		if ($ldap->verify($this->ldapUsername(), $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
 			return false;
 		}
-		if ($ldap->userhome !== false) {
+		if ($ldap->userhome !== null) {
 			$this->userhome = new URI($ldap->userhome);
 		}
 		return true;
