@@ -1,3 +1,4 @@
+- README.md: update with information about the new config system.
 - Config system: replace old globals-based config system with a system
   based on supplying array keys;
 - LDAP: add options to choose between AD bind and simple bind mechanisms;

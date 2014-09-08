@@ -319,27 +319,47 @@ files in the SambaDAV root, and are available normally.
 
 ## SambaDAV configuration
 
+At startup, SambaDAV reads all PHP files in the `/config` directory. Each file
+should return an array with config keys, like so:
+
+```php
+<?php
+
+return array(
+    'config_key' => 'config_value',
+);
+```
+
+The order and number of files doesn't matter as long as the right keys are set,
+but for convenience we supply four example config files.
+
 The main configuration file is `/config/config.inc.php`. Please refer to the
 comments in the file itself for more information. Some notes:
 
-- `SERVER_BASEDIR` is used by `server.php` to check whether the request was
+- `enable_webfolders` is the "master switch" for the whole SambaDAV suite. If
+  this variable is not available *and* does not have the explicit value of
+  `true`, then `server.php` does an early exit with a '404 Not found' error.
+  The idea behind this is to create a single on/off switch for SambaDAV,
+  through which administrators can centrally enable or disable the service.
+
+- `server_basedir` is used by `server.php` to check whether the request was
   transparently rewritten from the root of the server. If the given URI does
-  not start with `SERVER_BASEDIR`, `server.php` appends it during the setup of
+  not start with `server_basedir`, `server.php` appends it during the setup of
   the SabreDAV server.
 
-- `SMBCLIENT_EXTRA_OPTS` is an optional string containing extra arguments to
+- `smbclient_extra_opts` is an optional string containing extra arguments to
   pass to `smbclient`. For example, you can specify a nonstandard port by
   adding `--port 6789`. The option string is pasted verbatim and unescaped at
   the end of the `smbclient` invocation.
 
-- `ANONYMOUS_ONLY` allows _only_ anonymous logins, and consequently bypasses
+- `anonymous_only` allows _only_ anonymous logins, and consequently bypasses
   the whole basic authentication logic, because credentials are no longer
   necessary. This setting is for people who allow guest access to their shares.
 
-- `ANONYMOUS_ALLOW` means that empty usernames and passwords are not rejected
+- `anonymous_allow` means that empty usernames and passwords are not rejected
   as they would normally be, but converted into an anonymous (guest) request.
 
-  `ANONYMOUS_ALLOW` causes seemingly strange behaviour when visiting SambaDAV
+  `anonymous_allow` causes seemingly strange behaviour when visiting SambaDAV
   in the browser. You might expect to get a password box, but instead you find
   that you're always logged in automatically as the anonymous user. That
   happens because the password box normally only appears after an initial
@@ -353,19 +373,33 @@ comments in the file itself for more information. Some notes:
   With a "real" WebDAV client, you can pass a username and password in the very
   first request and get authenticated access that way.
 
-- `CACHE_USE` enables the disk cache. If you set this to FALSE, nothing will be
+- `cache_use` enables the disk cache. If you set this to FALSE, nothing will be
   cached and performance will be rather slow (everything's an expensive call to
   `smbclient`). Note that file contents are never cached, only metadata such as
   directory listings.
 
-- `CACHE_DIR` is the directory to use for caching. The default is
+- `cache_dir` is the directory to use for caching. The default is
   `/dev/shm/webfolders`, which is a directory in `/dev/shm`, a filesystem in
   shared memory. The cache code will create this cache directory at runtime if
   it doesn't exist (and set the permissons correctly), so you don't have to
   create the directory first. See [this section](#caching) for more.
 
-Apart from `config.inc.php`, there are three more files that are located in the
-`/config` directory:
+- `share_userhomes` is a bit of a misnomer, it's not a share but the name of
+  the server on which the userhomes can be found. If this variable is not
+  defined or is `false`, no userhome lookup is done. However, if it's set to
+  the name of a server, then the share `//server/username` is added, where
+  `username` is the name of the logged-in user. This userhome will appear in
+  the SambaDAV root as a folder with the name of the logged-in user.
+
+- `share_userhome_ldap` can be set to the name of a LDAP property containing
+  the URL for the user's home share. The value of this property must be of the
+  form `\\server` (which is interpreted as `\\server\username` for the
+  currently logged-in user), or `\\server\share`. For instance, if all your
+  LDAP users have a property called `sambaHomePath`, then its value will be
+  used for the home share. This setting overrides `share_userhomes`, and only
+  works with LDAP authentication.
+
+The other two config files are:
 
 - `share_root.inc.php`: defines server/share pairs that show up in the server
   root under the name of the share;
@@ -374,81 +408,50 @@ Apart from `config.inc.php`, there are three more files that are located in the
   root as a folder with the name of the server(s), containing folders named
   after the share(s) on that server;
 
-- `share_userhomes.inc.php`: contains the main on/off switch for SambaDAV
-  (placed here, and not in `config.inc.php`, because it had to be writable by
-  one specific module in the original system), and the name of the server on
-  which to find the user's home folder.
-
 See the files themselves for specific examples and syntax.
 
 An example of what `share_root.inc.php` can look like:
 
 ```php
 <?php
-$share_root = array(
-    array('server1'),
-    array('server2','share1'),
-    array('server2','share2')
+return array(
+    'share_root' => array(
+        array('server1'),
+        array('server2','share1'),
+        array('server2','share2'),
+    ),
 );
 ```
 
-`$share_root` is an array of arrays. Each child array consists of one or two
+`share_root` is an array of arrays. Each child array consists of one or two
 strings. The first string is the name of a server, the second string is
 optional and is the name of a share on that server. If you don't specify a
 share name, SambaDAV will use a `smbclient -L` call to automatically retrieve a
 list of available shares on that server (which may or may not be accessible to
 the user).
 
-`$share_root` is so called because the shares that you specify here are placed
+`share_root` is so called because the shares that you specify here are placed
 directly in the root as folders with the name of the *share*. In the example
 above, the root folder would have multiple subfolders: a folder for each share
 found on `server1`, and the folders `share1` and `share2`.
 
-`$share_extra` is like `$share_root`, but shares and servers that you define in
+`share_extra` is like `share_root`, but shares and servers that you define in
 that array are always placed in the SambaDAV root in a folder with the name of
 the *server*, containing subfolders named after the shares.
 
 ```php
 <?php
-$share_extra = array(
-    array('server5'),
-    array('server6','share6')
+return array(
+    'share_extra' => array(
+        array('server5'),
+        array('server6','share6').
+    ),
 );
 ```
 
 In the example above, this would create two folders in the root named `server5`
 and `server6`, with `server5` containing folders for all the autodiscovered
 shares on that server, and `server6` containing a single subfolder called `share6`.
-
-The third file, `share_userhomes.inc.php`, looks slightly different:
-
-```php
-<?php
-$enable_webfolders = TRUE;
-$share_userhomes = 'server7';
-$share_userhome_ldap = FALSE;
-```
-
-`$enable_webfolders` is the "master switch" for the whole SambaDAV suite. If
-this variable is not available *and* does not have the explicit value of
-`TRUE`, then `server.php` does an early exit with a '404 Not found' error. The
-idea behind this is to create a single on/off switch for SambaDAV, through
-which administrators can centrally enable or disable the service.
-
-`$share_userhomes` is a bit of a misnomer, it's not a share but the name of the
-server on which the userhomes can be found. If this variable is not defined or
-is FALSE, no userhome lookup is done. However, if it's set to the name of a
-server, then the share `//server/username` is added, where `username` is the
-name of the logged-in user. This userhome will appear in the SambaDAV root as
-a folder with the name of the logged-in user.
-
-`$share_userhome_ldap` can be set to the name of a LDAP property containing the
-URL for the user's home share. The value of this property must be of the form
-`\\server` (which is interpreted as `\\server\username` for the currently
-logged-in user), or `\\server\share`. For instance, if all your LDAP users have
-a property called `sambaHomePath`, then its value will be used for the home
-share. This setting overrides `$share_userhomes`, and only works with LDAP
-authentication.
 
 Further customization of the shares listing can be done by configuring Samba to
 produce the required list of shares. SambaDAV is kept simple on purpose.
@@ -477,18 +480,29 @@ to accept or reject the login attempt according to its internal processes, and
 SambaDAV will faithfully pass on the response.
 
 The extra check against the LDAP server was written specially for the original
-deployment environment, and might be too specific for general use. The code
-gets the base DN and the hostname from `/etc/ldap.conf`, then checks whether
-the username and password are valid by attempting to bind as the given user. If
-that succeeds, and the config variable `$ldap_groups` is not FALSE, it checks
-whether the user is a member of the given Posix group(s). If either condition
-fails, the user is rejected.
+deployment environment, and might be too specific for general use. Since
+version 0.4.0, SambaDAV supports two kinds of binds: the AD kind and the
+regular kind, here called "fastbind". If the ldap host and basedn are not
+provided in the config file, the code will try to get them from
+`/etc/ldap.conf`.
 
-The rationale behind LDAP support is twofold: to put a lightweight
-authentication service in front of the relatively heavyweight `smbclient` method
-of authentication (spawning a process, interpreting the results and so on), and
-to provide some form of access control. In this setup, only the users who are
-members of a certain group can use SambaDAV.
+In the fastbind scenario, the LDAP code will check whether the username and
+password are valid by attempting to bind as the given user. If that succeeds,
+and the config variable `ldap_groups` is not `false`, it checks whether the
+user is a member of the given Posix group(s). If either condition fails, the
+user is rejected.
+
+In the AD bind scenario, the code will first bind with an auth DN, fetch the DN
+for the user, and rebind as that user. It also optionally checks group
+memberships.
+
+There are three reasons for having LDAP support. Firstly, to put a lightweight
+authentication service in front of the relatively heavyweight `smbclient`
+method of authentication (spawning a process, interpreting the results and so
+on). Secondly, to provide some form of access control. In this setup, only the
+users who are members of a certain group can use SambaDAV. Thirdly, there is
+the option to fetch the location of a user's home directory from an LDAP
+property.
 
 
 ## Caching
@@ -663,3 +677,13 @@ Please be specific about any problems you encounter. Turn on logging and try to
 capture the commands and responses sent by SambaDAV and `smbclient`. (This
 might require the insertion of some strategically placed `error_log()`
 statements.) Include a mention of what you think the output should be.
+
+## Upgrading
+
+### From 0.3 to 0.4
+
+The config system changed between 0.3 and 0.4. In 0.3, configuration was done
+with a mix of global variables and defines. This changed in 0.4 to a system of
+array keys which are merged into the main config from all PHP files found in
+`/config`. The config variables and settings themselves have not changed, and
+can be carried over quite easily from an 0.3 installation.
