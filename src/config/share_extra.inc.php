@@ -15,11 +15,13 @@
 //
 // ...you would use:
 //
-//   $share_extra = array(
-//       array('SERVERONE', 'data'),
-//       array('SERVERONE', 'finance'),
-//       array('SERVERTWO', 'data'),
-//       array('SERVERTWO', 'finance'),
+//   return array(
+//       'share_extra' => array(
+//           array('SERVERONE', 'data'),
+//           array('SERVERONE', 'finance'),
+//           array('SERVERTWO', 'data'),
+//           array('SERVERTWO', 'finance'),
+//       ),
 //   );
 
-$share_extra = array();
+return array();

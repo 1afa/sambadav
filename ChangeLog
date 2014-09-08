@@ -1,3 +1,5 @@
+- Config system: replace old globals-based config system with a system
+  based on supplying array keys;
 - LDAP: add options to choose between AD bind and simple bind mechanisms;
 
 * Mon Aug 11 2014 Alfred Klomp <alfred@1afa.com> v0.3.1

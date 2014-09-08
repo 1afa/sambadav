@@ -23,10 +23,12 @@
 //
 // General idea:
 //
-//   $share_root = array(
-//      array('servername'),                // autodiscover all shares on the server
-//      array('servername', 'sharename')    // ...or hard-code a specific share
-//      ...
+//   return array(
+//       'share_root' => array(
+//           array('servername'),                // autodiscover all shares on the server
+//           array('servername', 'sharename'),   // ...or hard-code a specific share
+//           ...
+//       ),
 //   );
 //
 // Examples:
@@ -34,27 +36,33 @@
 // - Autodiscover the shared disks on server MYSERVER, create toplevel folders
 //   for each share found:
 //
-//     $share_root = array(
-//         array('MYSERVER')
+//     return array(
+//         'share_root' => array(
+//             array('MYSERVER'),
+//         ),
 //     );
 //
 // - Or don't autodiscover and show only the following shares on server MYSERVER,
 //   creating three toplevel directories called 'data', 'archive' and 'finance':
 //
-//     $share_root = array(
-//         array('MYSERVER', 'data'),
-//         array('MYSERVER', 'archive'),
-//         array('MYSERVER', 'finance')
+//     return array(
+//         'share_root' => array(
+//             array('MYSERVER', 'data'),
+//             array('MYSERVER', 'archive'),
+//             array('MYSERVER', 'finance'),
+//         ),
 //     );
 //
 // - Or mix-and-match both approaches (but beware of name clashes between
 //   shares on different servers: if both have a 'data' share, only the last one
 //   found will be visible):
 //
-//     $share_root = array(
-//         array('MYSERVER', 'data'),
-//         array('SERVERTWO', 'otherdata'),
-//         array('SERVERTHREE')
+//     return array(
+//         'share_root' = array(
+//             array('MYSERVER', 'data'),
+//             array('SERVERTWO', 'otherdata'),
+//             array('SERVERTHREE'),
+//         ),
 //     );
 
-$share_root = array();
+return array();

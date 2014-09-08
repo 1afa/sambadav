@@ -119,7 +119,12 @@ class Auth
 		if ($this->config->ldap_auth === false) {
 			return true;
 		}
-		$ldap = new LDAP();
+		// Should we do an AD-style bind or a fast bind?
+		$method = ($this->config->ldap_method === 'bind')
+			? LDAP::METHOD_BIND
+			: LDAP::METHOD_FASTBIND;
+
+		$ldap = new LDAP($method, $this->config->ldap_host, $this->config->ldap_basedn, $this->config->ldap_authdn, $this->config->ldap_authpass);
 
 		if ($ldap->verify($this->ldapUsername(), $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
 			return false;

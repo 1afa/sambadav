@@ -367,22 +367,6 @@ comments in the file itself for more information. Some notes:
 Apart from `config.inc.php`, there are three more files that are located in the
 `/config` directory:
 
-- `share_root.inc.php`;
-- `share_extra.inc.php`;
-- `share_userhomes.inc.php`.
-
-Each file contains specific config variables. The reason there are three files
-instead of a single one is that the system that SambaDAV was written for is
-split into modules that only know about their own "domain", such as whether
-userhomes are on or off. None of the modules individually has all the
-information needed to generate the whole config at once. So configuration was
-artificially split up among various files, to be written by each module. If you
-prefer, you can put all the variables in a single file and leave the other
-files empty or absent; the code ultimately only cares about the variables, not
-the files.
-
-The files are the following:
-
 - `share_root.inc.php`: defines server/share pairs that show up in the server
   root under the name of the share;
 
