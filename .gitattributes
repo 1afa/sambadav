@@ -7,6 +7,11 @@
 src/data/.gitignore export-ignore
 src/log/.gitignore export-ignore
 
+# Don't include the tests and Travis config in release tarballs; those are
+# relevant to development only:
+.travis.yml export-ignore
+tests export-ignore
+
 # These files are subject to keyword expansion by git-archive:
 src/*.php export-subst
 src/*.css export-subst
