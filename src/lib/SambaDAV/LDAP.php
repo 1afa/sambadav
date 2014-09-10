@@ -66,6 +66,11 @@ class LDAP
 			ldap_close($this->conn);
 			return false;
 		}
+		if ($this->method === self::METHOD_BIND) {
+			// To search on Active Directory, we must set this option or we
+			// get an "Operations error":
+			ldap_set_option($this->conn, LDAP_OPT_REFERRALS, 0);
+		}
 		return true;
 	}
 
@@ -116,12 +121,8 @@ class LDAP
 	private function
 	verify_bind ($user, $pass, $ldap_groups, $prop_userhome)
 	{
-		// To search on Active Directory, we must set this option or we
-		// get an "Operations error":
-		ldap_set_option($this->conn, LDAP_OPT_REFERRALS, 0);
-
 		// Start by binding with the auth account:
-		if (@ldap_bind($this->conn, $this->escape($this->authdn), $this->escape($this->authpass)) === false) {
+		if (@ldap_bind($this->conn, $this->authdn, $this->authpass) === false) {
 			return false;
 		}
 		// We are now bound under the auth account; lookup the user's DN:
@@ -151,14 +152,14 @@ class LDAP
 			$groupfilter = sprintf('(&(|%s)(member=%s))', implode($esc), $userdn);
 		}
 		else if (is_string($ldap_groups)) {
-			$groupfilter = sprintf('(&(&(objectclass=GROUP)(SAMACCOUNTNAME=%s))(member=%s))', $ldap_groups, $userdn);
+			$groupfilter = sprintf('(&(&(objectclass=GROUP)(SAMACCOUNTNAME=%s))(member=%s))', $this->escape($ldap_groups), $userdn);
 		}
 		else {
 			// No groups specified? Find userhome:
 			$this->userhomeSearch($user, $userdn, $userfilter, $prop_userhome);
 			return true;
 		}
-		if (($result = ldap_search($this->conn, $basedn, $groupfilter, array('member'), 1)) === false) {
+		if (($result = ldap_search($this->conn, $this->basedn, $groupfilter, array('member'), 1)) === false) {
 			return false;
 		}
 		if (ldap_first_entry($this->conn, $result) === false) {
@@ -222,13 +223,13 @@ class LDAP
 		}
 		// If $prop_userhome is set, try to find the given property;
 		// e..g. if $prop_userhome is 'sambaHomePath', search for that entry:
-		if (($result = ldap_search($this->conn, $searchdn, $filter, array($this->escape($prop_userhome)), 0)) === false) {
+		if (($result = ldap_search($this->conn, $searchdn, $filter, array($prop_userhome), 0)) === false) {
 			return;
 		}
 		if (($entry = ldap_first_entry($this->conn, $result)) === false) {
 			return;
 		}
-		if (($value = ldap_get_values($this->conn, $entry, $this->escape($prop_userhome))) === false) {
+		if (($value = ldap_get_values($this->conn, $entry, $prop_userhome)) === false) {
 			return;
 		}
 		if (!isset($value['count']) || $value['count'] == 0 || !isset($value[0]) || $value[0] === '') {
