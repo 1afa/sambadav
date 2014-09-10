@@ -30,6 +30,8 @@ class Auth
 	private $baseuri;
 	private $config;
 	private $userhome = null;	// An URI instance
+	private $samba_username = null;
+	private $samba_domain = null;
 
 	public function
 	__construct ($config, $baseuri = '/')
@@ -83,29 +85,45 @@ class Auth
 			$this->showLoginForm($auth);
 			return false;
 		}
+		if ($this->checkAuth() === false) {
+			sleep(2);
+			$this->showLoginForm($auth);
+			return false;
+		}
+		return true;
+	}
+
+	private function
+	checkAuth ()
+	{
 		// If we did not get all creds, check whether that's okay or not:
 		if ($this->user === null || $this->pass === null) {
 			if ($this->config->anonymous_allow) {
 				$this->anonymous = true;
 				return true;
 			}
-			$this->showLoginForm($auth);
 			return false;
 		}
-		// Strip possible domain part off the username:
-		// WinXP likes to pass this sometimes:
-		if (($pos = strpos($this->user, '\\')) !== false) {
-			$this->user = substr($this->user, $pos + 1);
+		// Check if the Samba patterns can be filled:
+		// These are the only patterns that are not exercised during this call:
+		if ($this->checkSambaPatterns() === false) {
+			return false;
 		}
 		// Set userhome to userhome pattern if defined:
 		if ($this->user !== null) {
-			if ($this->config->share_userhomes) {
+			if (is_string($this->config->userhome_pattern))
+			{
+				// Failed to fill the pattern?
+				if (($filled = $this->fillPattern($this->config->userhome_pattern)) === false) {
+					return false;
+				}
+				$this->userhome = new URI($filled);
+			}
+			else if (is_string($this->config->share_userhomes)) {
 				$this->userhome = new URI($this->config->share_userhomes, $this->user);
 			}
 		}
 		if ($this->checkLdap() === false) {
-			sleep(2);
-			$this->showLoginForm($auth);
 			return false;
 		}
 		return true;
@@ -126,11 +144,36 @@ class Auth
 
 		$ldap = new LDAP($method, $this->config->ldap_host, $this->config->ldap_basedn, $this->config->ldap_authdn, $this->config->ldap_authpass);
 
-		if ($ldap->verify($this->ldapUsername(), $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
+		if (($username = $this->ldapUsername()) === false) {
+			return false;
+		}
+		if ($ldap->verify($username, $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
 			return false;
 		}
 		if ($ldap->userhome !== null) {
 			$this->userhome = new URI($ldap->userhome);
+		}
+		return true;
+	}
+
+	private function
+	checkSambaPatterns ()
+	{
+		$this->samba_username = $this->user;
+		$this->samba_domain = null;
+
+		// Check if the Samba username pattern, if given, can be satisfied:
+		if (is_string($this->config->samba_username_pattern)) {
+			if (($filled = $this->fillPattern($this->config->samba_username_pattern)) === false) {
+				return false;
+			}
+			$this->samba_username = $filled;
+		}
+		if (is_string($this->config->samba_domain_pattern)) {
+			if (($filled = $this->fillPattern($this->config->samba_domain_pattern)) === false) {
+				return false;
+			}
+			$this->samba_domain = $filled;
 		}
 		return true;
 	}
@@ -146,24 +189,76 @@ class Auth
 	public function
 	ldapUsername ()
 	{
+		if (is_string($this->config->ldap_username_pattern)) {
+			return $this->fillPattern($this->config->ldap_username_pattern);
+		}
 		return $this->user;
 	}
 
 	public function
 	sambaUsername ()
 	{
-		return $this->user;
+		return $this->samba_username;
 	}
 
 	public function
 	sambaDomain ()
 	{
-		return null;
+		return $this->samba_domain;
 	}
 
 	public function
 	getUserhome ()
 	{
 		return $this->userhome;
+	}
+
+	public function
+	fillPattern ($pattern)
+	{
+		// Username can be split up as follows:
+		// workgroup\username@domain
+		//  %w = workgroup
+		//  %u = username
+		//  %d = domain
+
+		if (($slashPos = strpos($this->user, '\\')) === false) {
+			$atPos = strpos($this->user, '@');
+		}
+		else {
+			if (($atPos = strpos(substr($this->user, $slashPos), '@')) !== false) {
+				$atPos += $slashPos;
+			}
+		}
+		$workgroup = ($slashPos === false)
+			? ''
+			: substr($this->user, 0, $slashPos);
+
+		$userStart = ($slashPos === false) ? 0 : $slashPos + 1;
+		$userEnd = ($atPos === false) ? strlen($this->user) - 1 : $atPos - 1;
+
+		$username = substr($this->user, $userStart, $userEnd - $userStart + 1);
+
+		$domain = ($atPos === false)
+			? ''
+			: substr($this->user, $atPos + 1);
+
+		$subst = array
+			( '%w' => $workgroup
+			, '%u' => $username
+			, '%d' => $domain
+			) ;
+
+		// Check if all the placeholders specified in the string are
+		// available, else return false:
+		foreach ($subst as $repl => $str) {
+			if (strpos($pattern, $repl) === false) {
+				continue;
+			}
+			if ($str === '') {
+				return false;
+			}
+		}
+		return str_replace(array_keys($subst), array_values($subst), $pattern);
 	}
 }

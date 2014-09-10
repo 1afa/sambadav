@@ -1,3 +1,5 @@
+- Add pattern engine for userhome, LDAP and Samba usernames/domains;
+
 * Mon Sep 22 2014 Alfred Klomp <alfred@1afa.com> v0.4.1
 - Fix LDAP escaping bug, and use of undefined variable;
 - Don't include test suite in release tarballs;
