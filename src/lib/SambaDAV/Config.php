@@ -58,6 +58,15 @@ class Config
 			}
 			closedir($dir);
 		}
+		// Make sure that share_root and share_extra exist as arrays,
+		// even if they're empty:
+		if (!is_array($this->share_root)) {
+			$this->share_root = array();
+		}
+		if (!is_array($this->share_extra)) {
+			$this->share_extra = array();
+		}
+		// Merge "archives" keys into the list of root shares:
 		if (is_array($this->share_archives)) {
 			$this->share_root = array_merge($this->share_root, $this->share_archives);
 		}
