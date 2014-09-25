@@ -58,7 +58,7 @@
 //   found will be visible):
 //
 //     return array(
-//         'share_root' = array(
+//         'share_root' => array(
 //             array('MYSERVER', 'data'),
 //             array('SERVERTWO', 'otherdata'),
 //             array('SERVERTHREE'),

@@ -23,6 +23,15 @@ use Sabre\DAV;
 
 class BrowserPlugin extends DAV\Browser\Plugin
 {
+	private $anonymous_only;
+
+	public function
+	__construct ($anonymous_only = false)
+	{
+		parent::__construct();
+		$this->anonymous_only = $anonymous_only;
+	}
+
 	public function
 	generateDirectoryIndex ($path)
 	{
@@ -40,10 +49,15 @@ class BrowserPlugin extends DAV\Browser\Plugin
 
 		$parent = $this->server->tree->getNodeForPath($path);
 
-		$html .=
-"  </head>
-  <body>
-    <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>
+		$html .= "
+  </head>
+  <body>";
+		if ($this->anonymous_only === false) {
+			$html .= "
+    <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>";
+		}
+
+		$html .= "
     <h1>{$this->escapeHTML($parent->uri->uriFull())}</h1>
     <table id=\"actions\">
       <tbody>";

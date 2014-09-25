@@ -86,4 +86,32 @@ return array(
 	//   \\servername\sharename
 	'share_userhome_ldap' => false,
 
+	// The username that a user logs in with can be dissected as follows:
+	// workgroup\username@domain
+	//  %w = workgroup
+	//  %u = username
+	//  %d = domain
+	//
+	// The %w, %u and %d placeholders can be used in pattern strings.
+	// The username is always available by definition, unless anonymous
+	// login is allowed. The other two placeholders can be undefined if the 
+	// user didn't enter them. If you specify a pattern that can't be 
+	// filled from the user's input, the application will abort the 
+	// request.
+
+	// Pattern for the userhomes. If defined, this will override 'share_userhomes'.
+	// Example: '//SERVER/%u':
+	'userhome_pattern' => null,
+
+	// Pattern to create the username with that's used for LDAP authentication:
+	// Example: '%u-%w'
+	'ldap_username_pattern' => '%u',
+
+	// Pattern to create the username with that's passed to Samba for authentication:
+	// Example: '%w\\%u'
+	'samba_username_pattern' => '%u',
+
+	// Pattern to create the domain with that's passed to Samba for authentication:
+	'samba_domain_pattern' => null,
+
 );

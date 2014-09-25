@@ -96,13 +96,13 @@ class Process
 		{
 			$creds = array();
 
-			if (($user = $this->auth->sambaUsername()) !== null) {
+			if (is_string($user = $this->auth->sambaUsername())) {
 				$creds[] = "username=$user";
 			}
-			if (($pass = $this->auth->pass) !== null) {
+			if (is_string($pass = $this->auth->pass)) {
 				$creds[] = "password=$pass";
 			}
-			if (($domain = $this->auth->sambaDomain()) !== null) {
+			if (is_string($domain = $this->auth->sambaDomain())) {
 				$creds[] = "domain=$domain";
 			}
 			if (fwrite($this->fd[3], implode("\n", $creds)) === false) {
