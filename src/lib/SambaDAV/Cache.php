@@ -92,7 +92,7 @@ abstract class Cache
 		// this salt is not very random, but "good enough";
 		// MD5-hash it to a binary value so its length is constant and known: 16 bytes:
 		$salt = md5(uniqid('', true), true);
-		$key = sha1($salt . $user_key . 'webfolders', true);
+		$key = sha1($salt . $user_key . 'webfolders', true) . substr($salt, 0, 4);	// 24 bytes
 
 		// Prepend the IV and the password salt to the data; both are not secret:
 		return $iv . $salt . mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $data, MCRYPT_MODE_CBC, $iv);
@@ -110,7 +110,7 @@ abstract class Cache
 		}
 		$iv = substr($data, 0, $iv_size);
 		$salt = substr($data, $iv_size, $salt_size);
-		$key = sha1($salt . $user_key . 'webfolders', true);
+		$key = sha1($salt . $user_key . 'webfolders', true) . substr($salt, 0, 4);
 
 		return mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, substr($data, $iv_size + $salt_size), MCRYPT_MODE_CBC, $iv);
 	}
