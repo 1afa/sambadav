@@ -35,7 +35,8 @@ class File extends DAV\FSExt\File
 
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
-	public function __construct ($auth, $config, $uri, Directory $parent, $size, $smbflags, $mtime)
+	public function
+	__construct ($auth, $config, $uri, Directory $parent, $size, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->flags = new Propflags($smbflags);
@@ -47,12 +48,14 @@ class File extends DAV\FSExt\File
 		$this->config = $config;
 	}
 
-	public function getName ()
+	public function
+	getName ()
 	{
 		return $this->uri->name();
 	}
 
-	public function setName ($name)
+	public function
+	setName ($name)
 	{
 		Log::trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
 		switch (SMB::rename($this->auth, $this->config, $this->uri, $name)) {
@@ -68,7 +71,8 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function get ()
+	public function
+	get ()
 	{
 		// NB: because we return a file resource, we must ensure that
 		// the proc object stays alive after we leave this function.
@@ -87,7 +91,8 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function put ($data)
+	public function
+	put ($data)
 	{
 		Log::trace("File::put '%s'\n", $this->uri->uriFull());
 		switch (SMB::put($this->auth, $this->config, $this->uri, $data, $md5)) {
@@ -103,7 +108,8 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function putRange ($data, $offset)
+	public function
+	putRange ($data, $offset)
 	{
 		// Sorry bro, smbclient is not that advanced:
 		// Override the inherited method from the base class:
@@ -111,7 +117,8 @@ class File extends DAV\FSExt\File
 		throw new DAV\Exception\NotImplemented("PutRange() not available due to limitations of smbclient");
 	}
 
-	public function getETag ()
+	public function
+	getETag ()
 	{
 		Log::trace("File::getETag '%s'\n", $this->uri->uriFull());
 
@@ -139,37 +146,44 @@ class File extends DAV\FSExt\File
 		return $this->etag;
 	}
 
-	public function getContentType ()
+	public function
+	getContentType ()
 	{
 		return NULL;
 	}
 
-	public function getSize ()
+	public function
+	getSize ()
 	{
 		return $this->size;
 	}
 
-	public function getLastModified ()
+	public function
+	getLastModified ()
 	{
 		return $this->mtime;
 	}
 
-	public function getIsHidden ()
+	public function
+	getIsHidden ()
 	{
 		return $this->flags->get('H');
 	}
 
-	public function getIsReadonly ()
+	public function
+	getIsReadonly ()
 	{
 		return $this->flags->get('R');
 	}
 
-	public function getWin32Props ()
+	public function
+	getWin32Props ()
 	{
 		return $this->flags->toWin32();
 	}
 
-	public function updateProperties ($mutations)
+	public function
+	updateProperties ($mutations)
 	{
 		Log::trace("File::updateProperties '%s'\n", $this->uri->uriFull());
 
@@ -227,7 +241,8 @@ class File extends DAV\FSExt\File
 		return true;
 	}
 
-	public function delete ()
+	public function
+	delete ()
 	{
 		Log::trace("File::delete '%s'\n", $this->uri->uriFull());
 		switch (SMB::rm($this->auth, $this->config, $this->uri)) {
@@ -242,14 +257,16 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	private function invalidate_parent ()
+	private function
+	invalidate_parent ()
 	{
 		if ($this->parent !== false) {
 			$this->parent->cache_destroy();
 		}
 	}
 
-	private function exc_forbidden ()
+	private function
+	exc_forbidden ()
 	{
 		// Only one type of Forbidden error right now: invalid filename or pathname
 		$m = 'Forbidden: invalid pathname or filename';
@@ -257,20 +274,23 @@ class File extends DAV\FSExt\File
 		throw new DAV\Exception\Forbidden($m);
 	}
 
-	private function exc_notfound ()
+	private function
+	exc_notfound ()
 	{
 		$m = sprintf("Not found: '%s'", $this->uri->uriFull());
 		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
-	private function exc_smbclient ()
+	private function
+	exc_smbclient ()
 	{
 		Log::trace("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
 		throw new DAV\Exception('smbclient error');
 	}
 
-	private function exc_unauthenticated ()
+	private function
+	exc_unauthenticated ()
 	{
 		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
 		Log::trace("EXCEPTION: $m\n");
