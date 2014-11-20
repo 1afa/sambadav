@@ -77,7 +77,7 @@ class Propflags
 			$this->flags[$flag] = ($flags & $this->bitmask[$flag]) ? 1 : 0;
 		}
 		$this->updateNormal();
-		$this->init = true;
+		return $this->init = true;
 	}
 
 	public function to_win32 ()
