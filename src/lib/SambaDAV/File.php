@@ -149,7 +149,7 @@ class File extends DAV\FSExt\File
 	public function
 	getContentType ()
 	{
-		return NULL;
+		return null;
 	}
 
 	public function

@@ -170,7 +170,7 @@ class Directory extends DAV\FSExt\Directory
 			case SMB::STATUS_OK:
 				// Invalidate entries cache:
 				$this->cache_destroy();
-				return ($md5 === NULL) ? NULL : "\"$md5\"";
+				return ($md5 === null) ? null : "\"$md5\"";
 
 			case SMB::STATUS_NOTFOUND: $this->exc_notfound($this->uri->uriFull());
 			case SMB::STATUS_SMBCLIENT_ERROR: $this->exc_smbclient();
@@ -273,10 +273,10 @@ class Directory extends DAV\FSExt\Directory
 		//   disk usage if it can't get direct quota numbers;
 		// - Windows 7 does not appear to actually *use* the quota
 		//   numbers for printing usage pie charts and things.
-		static $quota = NULL;
+		static $quota = null;
 
 		// Can we return a cached value?
-		if ($quota !== NULL) {
+		if ($quota !== null) {
 			return $quota;
 		}
 		// If we're a subdir, make SabreDAV query the root:
