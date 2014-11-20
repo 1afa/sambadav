@@ -64,10 +64,10 @@ class Propflags
 
 	public function __construct ($smbflags = false)
 	{
-		if ($smbflags !== false) $this->from_smbflags($smbflags);
+		if ($smbflags !== false) $this->fromSmbflags($smbflags);
 	}
 
-	public function from_win32 ($msflags)
+	public function fromWin32 ($msflags)
 	{
 		if (strlen($msflags) !== 8
 		 || sscanf($msflags, '%08x', $flags) !== 1) {
@@ -80,7 +80,7 @@ class Propflags
 		return $this->init = true;
 	}
 
-	public function to_win32 ()
+	public function toWin32 ()
 	{
 		if ($this->init === false) return false;
 
@@ -133,7 +133,7 @@ class Propflags
 		return ($this->init) ? $this->flags[$flag] : false;
 	}
 
-	private function from_smbflags ($smbflags)
+	private function fromSmbflags ($smbflags)
 	{
 		// The 'smbflags' are the ones found in the output of
 		// smbclient's `ls` command. They are case-sensitive.

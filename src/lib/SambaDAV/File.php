@@ -166,7 +166,7 @@ class File extends DAV\FSExt\File
 
 	public function getWin32Props ()
 	{
-		return $this->flags->to_win32();
+		return $this->flags->toWin32();
 	}
 
 	public function updateProperties ($mutations)
@@ -188,7 +188,7 @@ class File extends DAV\FSExt\File
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
 					// Decode into array of flags:
-					$new_flags->from_win32($val);
+					$new_flags->fromWin32($val);
 					break;
 
 				case '{DAV:}ishidden':

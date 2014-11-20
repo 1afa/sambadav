@@ -243,7 +243,7 @@ class Directory extends DAV\FSExt\Directory
 
 	public function getWin32Props ()
 	{
-		return $this->flags->to_win32();
+		return $this->flags->toWin32();
 	}
 
 	public function getQuotaInfo ()

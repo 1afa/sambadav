@@ -8,37 +8,37 @@ class PropflagsTest extends \PHPUnit_Framework_TestCase
 	testFromWin32Neg_A ()
 	{
 		$flags = new Propflags();
-		$this->assertFalse($flags->from_win32('hallo'));
+		$this->assertFalse($flags->fromWin32('hallo'));
 	}
 
 	public function
 	testFromWin32Neg_B ()
 	{
 		$flags = new Propflags();
-		$this->assertFalse($flags->from_win32(null));
+		$this->assertFalse($flags->fromWin32(null));
 	}
 
 	public function
 	testFromWin32Pos_A ()
 	{
 		$flags = new PropFlags();
-		$this->assertTrue($flags->from_win32('00000080'));	// Normal
+		$this->assertTrue($flags->fromWin32('00000080'));	// Normal
 	}
 
 	public function
 	testFromWin32Pos_B ()
 	{
 		$flags = new PropFlags();
-		$flags->from_win32('00000080');
-		$this->assertEquals('00000080', $flags->to_win32());
+		$flags->fromWin32('00000080');
+		$this->assertEquals('00000080', $flags->toWin32());
 	}
 
 	public function
 	testFromWin32Pos_C ()
 	{
 		$flags = new PropFlags();
-		$flags->from_win32('00000001');
-		$this->assertEquals('00000001', $flags->to_win32());
+		$flags->fromWin32('00000001');
+		$this->assertEquals('00000001', $flags->toWin32());
 	}
 
 	public function
@@ -47,10 +47,10 @@ class PropflagsTest extends \PHPUnit_Framework_TestCase
 		$flags = new PropFlags();
 
 		// No normal flag set:
-		$flags->from_win32('00000000');
+		$flags->fromWin32('00000000');
 
 		// After roundtrip, normal flag set:
-		$this->assertEquals('00000080', $flags->to_win32());
+		$this->assertEquals('00000080', $flags->toWin32());
 	}
 
 	public function
@@ -59,13 +59,13 @@ class PropflagsTest extends \PHPUnit_Framework_TestCase
 		$flags = new PropFlags();
 
 		// Set normal flag:
-		$flags->from_win32('00000080');
+		$flags->fromWin32('00000080');
 
 		// Set other flag:
 		$flags->set('R', true);
 
 		// After roundtrip, normal flag unset:
-		$this->assertEquals('00000001', $flags->to_win32());
+		$this->assertEquals('00000001', $flags->toWin32());
 	}
 
 	public function
@@ -74,34 +74,34 @@ class PropflagsTest extends \PHPUnit_Framework_TestCase
 		$flags = new PropFlags();
 
 		// Set R flag flag:
-		$flags->from_win32('00000001');
+		$flags->fromWin32('00000001');
 
 		// Unset again:
 		$flags->set('R', false);
 
 		// After roundtrip, normal flag set:
-		$this->assertEquals('00000080', $flags->to_win32());
+		$this->assertEquals('00000080', $flags->toWin32());
 	}
 
 	public function
 	testFromSmbflags_A ()
 	{
 		$flags = new PropFlags('H');
-		$this->assertEquals('00000002', $flags->to_win32());
+		$this->assertEquals('00000002', $flags->toWin32());
 	}
 
 	public function
 	testFromSmbflags_B ()
 	{
 		$flags = new PropFlags('N');
-		$this->assertEquals('00000080', $flags->to_win32());	// Normal
+		$this->assertEquals('00000080', $flags->toWin32());	// Normal
 	}
 
 	public function
 	testFromSmbflags_C ()
 	{
 		$flags = new PropFlags('RH');
-		$this->assertEquals('00000003', $flags->to_win32());
+		$this->assertEquals('00000003', $flags->toWin32());
 	}
 
 	public function
