@@ -62,12 +62,14 @@ class Propflags
 
 	private $init = false;
 
-	public function __construct ($smbflags = false)
+	public function
+	__construct ($smbflags = false)
 	{
 		if ($smbflags !== false) $this->fromSmbflags($smbflags);
 	}
 
-	public function fromWin32 ($msflags)
+	public function
+	fromWin32 ($msflags)
 	{
 		if (strlen($msflags) !== 8
 		 || sscanf($msflags, '%08x', $flags) !== 1) {
@@ -80,7 +82,8 @@ class Propflags
 		return $this->init = true;
 	}
 
-	public function toWin32 ()
+	public function
+	toWin32 ()
 	{
 		if ($this->init === false) return false;
 
@@ -95,7 +98,8 @@ class Propflags
 		return sprintf('%08x', $msflags);
 	}
 
-	public function diff ($that)
+	public function
+	diff ($that)
 	{
 		// Returns an array with zero, one or two strings: the strings
 		// needed to go from flags in $this to $that, in `smbclient
@@ -121,19 +125,22 @@ class Propflags
 		return $ret;
 	}
 
-	public function set ($flag, $val)
+	public function
+	set ($flag, $val)
 	{
 		$this->flags[$flag] = ((int)$val) ? 1 : 0;
 		$this->updateNormal();
 		$this->init = true;
 	}
 
-	public function get ($flag)
+	public function
+	get ($flag)
 	{
 		return ($this->init) ? $this->flags[$flag] : false;
 	}
 
-	private function fromSmbflags ($smbflags)
+	private function
+	fromSmbflags ($smbflags)
 	{
 		// The 'smbflags' are the ones found in the output of
 		// smbclient's `ls` command. They are case-sensitive.
@@ -144,7 +151,8 @@ class Propflags
 		$this->init = true;
 	}
 
-	private function updateNormal ()
+	private function
+	updateNormal ()
 	{
 		// The N (NORMAL) flag can only be set if no other flags are set:
 		if ($this->flags['N'] === 1) {
