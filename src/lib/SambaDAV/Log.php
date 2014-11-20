@@ -21,55 +21,101 @@ namespace SambaDAV;
 
 class Log
 {
-	// Set this to true to enable trace-level logging:
-	private static $traceEnabled = false;
-	private static $filename = null;
+	const NONE  = 0;
+	const ERROR = 1;
+	const WARN  = 2;
+	const INFO  = 3;
+	const DEBUG = 4;
+	const TRACE = 5;
 
-	public static function
+	private $lnames =
+		[ self::NONE  => 'none'
+		, self::ERROR => 'error'
+		, self::WARN  => 'warn'
+		, self::INFO  => 'info'
+		, self::DEBUG => 'debug'
+		, self::TRACE => 'trace'
+		] ;
+
+	private $level;
+	private $filename = null;
+
+	public function
+	__construct ($level = self::WARN, $filename = null)
+	{
+		$this->level = $level;
+		$this->filename = $filename;
+
+		if (is_null($this->filename)) {
+			$this->filename = strftime(dirname(dirname(dirname(__FILE__))).'/log/%Y-%m-%d.log');
+		}
+	}
+
+	public function
+	error ()
+	{
+		$this->log(self::ERROR, func_get_args());
+	}
+
+	public function
+	warn ()
+	{
+		$this->log(self::WARN, func_get_args());
+	}
+
+	public function
+	info ()
+	{
+		$this->log(self::INFO, func_get_args());
+	}
+
+	public function
+	debug ()
+	{
+		$this->log(self::DEBUG, func_get_args());
+	}
+
+	public function
 	trace ()
 	{
-		if (self::$traceEnabled === false) {
-			return;
-		}
-		if (func_num_args() === 0) {
-			return;
-		}
-		// Treat first argument as a sprintf format string, the rest as arguments:
-		$args = func_get_args();
-		$message = call_user_func_array('sprintf', $args);
-
-		if ($fp = self::fileOpenLockAppend()) {
-			fwrite($fp, $message);
-			self::fileCloseUnlock($fp);
-		}
+		$this->log(self::TRACE, func_get_args());
 	}
 
-	private static function
-	initFilename ()
+	private function
+	log ($level, $args)
 	{
-		self::$filename = strftime(dirname(dirname(dirname(__FILE__))).'/log/trace-%Y-%m-%d.log');
+		// Message logged below threshold?
+		if ($level > $this->level) {
+			return;
+		}
+		$message = strftime('%Y-%m-%d %H:%M:%S: ') . $this->lnames[$level] . ': ';
+
+		// Treat first argument as a sprintf format string, the rest as arguments:
+		$message .= call_user_func_array('sprintf', $args);
+
+		if ($fp = $this->fileOpenLockAppend()) {
+			fwrite($fp, $message);
+			$this->fileCloseUnlock($fp);
+		}
 	}
 
-	private static function
+	private function
 	fileOpenLockAppend ()
 	{
 		// Open the file for appending, lock it.
 		// Returns file handle, or false on error.
-		if (self::$filename === null) {
-			self::initFilename();
-		}
-		if (($fd = fopen(self::$filename, 'a')) === false) {
+		if (($fd = fopen($this->filename, 'a')) === false) {
 			return false;
 		}
 		if ((flock($fd, LOCK_EX)) === false) {
 			fclose($fd);
 			return false;
 		}
-		chmod(self::$filename, 0600);
+		chmod($this->filename, 0600);
 		return $fd;
 	}
 
-	private static function
+	private function
 	fileCloseUnlock ($fd)
 	{
 		fflush($fd);
