@@ -33,7 +33,8 @@ class Directory extends DAV\FSExt\Directory
 	private $config;
 	private $cache;
 
-	public function __construct ($auth, $config, $cache, URI $uri, $parent, $smbflags, $mtime)
+	public function
+	__construct ($auth, $config, $cache, URI $uri, $parent, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->auth = $auth;
@@ -44,7 +45,8 @@ class Directory extends DAV\FSExt\Directory
 		$this->cache = $cache;
 	}
 
-	public function getChildren ()
+	public function
+	getChildren ()
 	{
 		Log::trace("Directory::getChildren '%s'\n", $this->uri->uriFull());
 
@@ -79,7 +81,8 @@ class Directory extends DAV\FSExt\Directory
 		return $children;
 	}
 
-	public function getChild ($name)
+	public function
+	getChild ($name)
 	{
 		Log::trace("Directory::getChild '%s' '%s'\n", $this->uri->uriFull(), $name);
 
@@ -127,7 +130,8 @@ class Directory extends DAV\FSExt\Directory
 		return false;
 	}
 
-	public function createDirectory ($name)
+	public function
+	createDirectory ($name)
 	{
 		Log::trace("Directory::createDirectory '%s' '%s'\n", $this->uri->uriFull(), $name);
 
@@ -148,7 +152,8 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	public function createFile ($name, $data = NULL)
+	public function
+	createFile ($name, $data = null)
 	{
 		$uri = clone $this->uri;
 		$uri->addParts($name);
@@ -174,7 +179,8 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	public function childExists ($name)
+	public function
+	childExists ($name)
 	{
 		// Are we the global root?
 		if ($this->uri->isGlobalRoot()) {
@@ -200,12 +206,14 @@ class Directory extends DAV\FSExt\Directory
 		return false;
 	}
 
-	public function getName ()
+	public function
+	getName ()
 	{
 		return $this->uri->name();
 	}
 
-	public function setName ($name)
+	public function
+	setName ($name)
 	{
 		Log::trace("Directory::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
 
@@ -226,27 +234,32 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	public function getLastModified ()
+	public function
+	getLastModified ()
 	{
 		return $this->mtime;
 	}
 
-	public function getIsHidden ()
+	public function
+	getIsHidden ()
 	{
 		return $this->flags->get('H');
 	}
 
-	public function getIsReadonly ()
+	public function
+	getIsReadonly ()
 	{
 		return $this->flags->get('R');
 	}
 
-	public function getWin32Props ()
+	public function
+	getWin32Props ()
 	{
 		return $this->flags->toWin32();
 	}
 
-	public function getQuotaInfo ()
+	public function
+	getQuotaInfo ()
 	{
 		Log::trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull());
 
@@ -283,7 +296,8 @@ class Directory extends DAV\FSExt\Directory
 		return false;
 	}
 
-	public function delete ()
+	public function
+	delete ()
 	{
 		Log::trace("Directory::delete '%s'\n", $this->uri->uriFull());
 
@@ -308,7 +322,8 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	public function updateProperties ($mutations)
+	public function
+	updateProperties ($mutations)
 	{
 		// Stub function, see \SambaDAV\File::updateProperties() for
 		// more details.
@@ -326,18 +341,21 @@ class Directory extends DAV\FSExt\Directory
 		return true;
 	}
 
-	public function cache_destroy ()
+	public function
+	cache_destroy ()
 	{
 		$this->cache->remove('\SambaDAV\SMB::ls', $this->auth, $this->uri);
 		$this->entries = false;
 	}
 
-	public function setUserhome ($uri)
+	public function
+	setUserhome ($uri)
 	{
 		$this->userhome = $uri;
 	}
 
-	private function get_entries ()
+	private function
+	get_entries ()
 	{
 		// Get listing from disk cache if available and fresh:
 		$this->entries = $this->cache->get('\SambaDAV\SMB::ls', array($this->auth, $this->config, $this->uri), $this->auth, $this->uri, 5);
@@ -352,14 +370,16 @@ class Directory extends DAV\FSExt\Directory
 		}
 	}
 
-	private function invalidate_parent ()
+	private function
+	invalidate_parent ()
 	{
 		if ($this->parent !== null) {
 			$this->parent->cache_destroy();
 		}
 	}
 
-	private function global_root_entries ()
+	private function
+	global_root_entries ()
 	{
 		// structure:
 		// $entries = array('name-of-root-folder' => array('server', 'share-on-that-server'))
@@ -407,7 +427,8 @@ class Directory extends DAV\FSExt\Directory
 		return $entries;
 	}
 
-	private function server_root_entries ()
+	private function
+	server_root_entries ()
 	{
 		$entries = array();
 
@@ -463,35 +484,40 @@ class Directory extends DAV\FSExt\Directory
 		return array_keys($entries);
 	}
 
-	private function exc_smbclient ()
+	private function
+	exc_smbclient ()
 	{
 		$m = 'smbclient error';
 		Log::trace("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
 		throw new DAV\Exception($m);
 	}
 
-	private function exc_forbidden ($msg)
+	private function
+	exc_forbidden ($msg)
 	{
 		$m = "Forbidden: $msg";
 		Log::trace("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
 		throw new DAV\Exception\Forbidden($m);
 	}
 
-	private function exc_notfound ($name)
+	private function
+	exc_notfound ($name)
 	{
 		$m = "Not found: \"$name\"";
 		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
-	private function exc_unauthenticated ()
+	private function
+	exc_unauthenticated ()
 	{
 		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
 		Log::trace("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}
 
-	private function exc_notimplemented ($msg)
+	private function
+	exc_notimplemented ($msg)
 	{
 		$m = "Not implemented: $msg";
 		Log::trace("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
