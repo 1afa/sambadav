@@ -58,8 +58,11 @@ $cache = ($config->cache_use)
 if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	$cache->clean();
 }
+// Create SMB command class:
+$smb = new SMB($auth, $config);
+
 // No server, share and path known in root dir:
-$rootDir = new Directory($auth, $config, $cache, new URI(), null, 'D', null);
+$rootDir = new Directory($auth, $config, $cache, $smb, new URI(), null, 'D', null);
 
 // Add userhome to root dir:
 $rootDir->setUserhome($auth->getUserhome());
