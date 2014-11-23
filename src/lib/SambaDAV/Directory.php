@@ -32,10 +32,11 @@ class Directory extends DAV\FSExt\Directory
 	private $auth;
 	private $config;
 	private $cache;
+	private $log;
 	private $smb;
 
 	public function
-	__construct ($auth, $config, $cache, $smb, URI $uri, $parent, $smbflags, $mtime)
+	__construct ($auth, $config, $cache, $log, $smb, URI $uri, $parent, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->auth = $auth;
@@ -44,20 +45,21 @@ class Directory extends DAV\FSExt\Directory
 		$this->parent = $parent;
 		$this->config = $config;
 		$this->cache = $cache;
+		$this->log = $log;
 		$this->smb = $smb;
 	}
 
 	public function
 	getChildren ()
 	{
-		Log::trace("Directory::getChildren '%s'\n", $this->uri->uriFull());
+		$this->log->trace("Directory::getChildren '%s'\n", $this->uri->uriFull());
 
 		$children = array();
 
 		// If in root folder, show master shares list:
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $entry) {
-				$children[] = new Directory($this->auth, $this->config, $this->cache, $this->smb, new URI($entry[0], $entry[1]), $this, 'D', null);
+				$children[] = new Directory($this->auth, $this->config, $this->cache, $this->log, $this->smb, new URI($entry[0], $entry[1]), $this, 'D', null);
 			}
 			return $children;
 		}
@@ -66,7 +68,7 @@ class Directory extends DAV\FSExt\Directory
 			foreach ($this->server_root_entries() as $entry) {
 				$uri = clone $this->uri;
 				$uri->addParts($entry);
-				$children[] = new Directory($this->auth, $this->config, $this->cache, $this->smb, $uri, $this, 'D', null);
+				$children[] = new Directory($this->auth, $this->config, $this->cache, $this->log, $this->smb, $uri, $this, 'D', null);
 			}
 			return $children;
 		}
@@ -86,13 +88,13 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	getChild ($name)
 	{
-		Log::trace("Directory::getChild '%s' '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("Directory::getChild '%s' '%s'\n", $this->uri->uriFull(), $name);
 
 		// Are we a folder in the root dir?
 		if ($this->uri->isGlobalRoot()) {
 			foreach ($this->global_root_entries() as $displayname => $entry) {
 				if ($name === $displayname) {
-					return new Directory($this->auth, $this->config, $this->cache, $this->smb, new URI($entry[0], $entry[1]), $this, 'D', null);
+					return new Directory($this->auth, $this->config, $this->cache, $this->log, $this->smb, new URI($entry[0], $entry[1]), $this, 'D', null);
 				}
 			}
 			$this->exc_notfound($name);
@@ -103,7 +105,7 @@ class Directory extends DAV\FSExt\Directory
 			if (in_array($name, $this->server_root_entries())) {
 				$uri = clone $this->uri;
 				$uri->addParts($name);
-				return new Directory($this->auth, $this->config, $this->cache, $this->smb, $uri, $this, 'D', null);
+				return new Directory($this->auth, $this->config, $this->cache, $this->log, $this->smb, $uri, $this, 'D', null);
 			}
 			$this->exc_notfound($name);
 			return false;
@@ -121,9 +123,9 @@ class Directory extends DAV\FSExt\Directory
 				$uri->addParts($entry['name']);
 
 				if (strpos($entry['flags'], 'D') === false) {
-					return new File($this->auth, $this->config, $this->smb, $uri, $this, $entry['size'], $entry['flags'], $entry['mtime']);
+					return new File($this->auth, $this->config, $this->log, $this->smb, $uri, $this, $entry['size'], $entry['flags'], $entry['mtime']);
 				}
-				return new Directory($this->auth, $this->config, $this->cache, $this->smb, $uri, $this, $entry['flags'], $entry['mtime']);
+				return new Directory($this->auth, $this->config, $this->cache, $this->log, $this->smb, $uri, $this, $entry['flags'], $entry['mtime']);
 			}
 		}
 		$uri = clone $this->uri;
@@ -135,7 +137,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	createDirectory ($name)
 	{
-		Log::trace("Directory::createDirectory '%s' '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("Directory::createDirectory '%s' '%s'\n", $this->uri->uriFull(), $name);
 
 		// Cannot create directories in the root:
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
@@ -160,7 +162,7 @@ class Directory extends DAV\FSExt\Directory
 		$uri = clone $this->uri;
 		$uri->addParts($name);
 
-		Log::trace("Directory::createFile '%s'\n", $uri->uriFull());
+		$this->log->trace("Directory::createFile '%s'\n", $uri->uriFull());
 
 		if ($this->uri->isGlobalRoot()) {
 			$this->exc_forbidden('Cannot create files in global root');
@@ -217,7 +219,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	setName ($name)
 	{
-		Log::trace("Directory::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("Directory::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot rename root folders');
@@ -263,7 +265,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	getQuotaInfo ()
 	{
-		Log::trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull());
+		$this->log->trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull());
 
 		// NB: Windows 7 uses/needs this method. Must return array.
 		// We refuse to do the actual lookup, because:
@@ -301,7 +303,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	delete ()
 	{
-		Log::trace("Directory::delete '%s'\n", $this->uri->uriFull());
+		$this->log->trace("Directory::delete '%s'\n", $this->uri->uriFull());
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot delete root folders');
@@ -490,7 +492,7 @@ class Directory extends DAV\FSExt\Directory
 	exc_smbclient ()
 	{
 		$m = 'smbclient error';
-		Log::trace("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
+		$this->log->error("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
 		throw new DAV\Exception($m);
 	}
 
@@ -498,7 +500,7 @@ class Directory extends DAV\FSExt\Directory
 	exc_forbidden ($msg)
 	{
 		$m = "Forbidden: $msg";
-		Log::trace("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
+		$this->log->warn("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
 		throw new DAV\Exception\Forbidden($m);
 	}
 
@@ -506,7 +508,7 @@ class Directory extends DAV\FSExt\Directory
 	exc_notfound ($name)
 	{
 		$m = "Not found: \"$name\"";
-		Log::trace("EXCEPTION: $m\n");
+		$this->log->warn("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
@@ -514,7 +516,7 @@ class Directory extends DAV\FSExt\Directory
 	exc_unauthenticated ()
 	{
 		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
-		Log::trace("EXCEPTION: $m\n");
+		$this->log->warn("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}
 
@@ -522,7 +524,7 @@ class Directory extends DAV\FSExt\Directory
 	exc_notimplemented ($msg)
 	{
 		$m = "Not implemented: $msg";
-		Log::trace("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
+		$this->log->warn("EXCEPTION: '%s': %s\n", $this->uri->uriFull(), $m);
 		throw new DAV\Exception\NotImplemented($m);
 	}
 }

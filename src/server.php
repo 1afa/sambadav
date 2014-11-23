@@ -40,6 +40,9 @@ if ($config->enabled !== true) {
 // Check if the request was rewritten:
 $baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $config->server_basedir : '/';
 
+// Create central Log object:
+$log = new Log();
+
 $auth = new Auth($config, $baseuri);
 
 // Run the authentication routines:
@@ -62,7 +65,7 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 $smb = new SMB($auth, $config);
 
 // No server, share and path known in root dir:
-$rootDir = new Directory($auth, $config, $cache, $smb, new URI(), null, 'D', null);
+$rootDir = new Directory($auth, $config, $cache, $log, $smb, new URI(), null, 'D', null);
 
 // Add userhome to root dir:
 $rootDir->setUserhome($auth->getUserhome());
