@@ -38,11 +38,13 @@ class SMB
 	}
 
 	public function
-	getShares ($uri)
+	getShares ($uri, $proc = null)
 	{
 		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
-		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
 
+		if (is_null($proc)) {
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		}
 		if ($proc->open($args, false) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
 		}
