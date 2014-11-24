@@ -51,7 +51,7 @@ class SMB
 	}
 
 	public function
-	ls ($uri)
+	ls ($uri, $proc = null)
 	{
 		Log::trace("SMB::ls '%s'\n", $uri->uriFull());
 
@@ -60,8 +60,11 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = $this->makeCmd($uri->path(), 'ls');
-		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
 
+		// Allow injection of a proc object for testing:
+		if (is_null($proc)) {
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
 		}
@@ -70,14 +73,16 @@ class SMB
 	}
 
 	public function
-	du ($uri)
+	du ($uri, $proc = null)
 	{
 		Log::trace("SMB::du '%s'\n", $uri->uriFull());
 
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = $this->makeCmd($uri->path(), 'du');
-		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
 
+		if (is_null($proc)) {
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
 		}
