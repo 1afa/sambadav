@@ -71,4 +71,22 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 
 		$smb->du($uri, $proc);
 	}
+
+	public function
+	testGet ()
+	{
+		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
+			array('open'),
+			array(null, null));
+
+		$smb = new SMB(null, null);
+		$uri = new URI('//server/share/dir/file.txt');
+
+		$proc->expects($this->once())
+		     ->method('open')
+		     ->with($this->equalTo("'//server/share'"), $this->equalTo("cd \"/dir\"\nget \"file.txt\" /proc/self/fd/5"));
+
+		$smb->get($uri, $proc);
+	}
+
 }

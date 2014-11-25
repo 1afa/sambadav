@@ -109,9 +109,9 @@ class SMB
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
 		}
-		fclose($proc->fd[1]);
-		fclose($proc->fd[2]);
-		fclose($proc->fd[4]);
+		if (is_resource($proc->fd[1])) fclose($proc->fd[1]);
+		if (is_resource($proc->fd[2])) fclose($proc->fd[2]);
+		if (is_resource($proc->fd[4])) fclose($proc->fd[4]);
 		return self::STATUS_OK;
 	}
 
