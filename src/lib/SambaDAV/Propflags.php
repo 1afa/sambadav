@@ -63,9 +63,9 @@ class Propflags
 	private $init = false;
 
 	public function
-	__construct ($smbflags = false)
+	__construct ($smbflags = null)
 	{
-		if ($smbflags !== false) $this->fromSmbflags($smbflags);
+		if ($smbflags !== null) $this->fromSmbflags($smbflags);
 	}
 
 	public function
