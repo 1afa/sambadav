@@ -41,7 +41,7 @@ if ($config->enabled !== true) {
 $baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $config->server_basedir : '/';
 
 // Create central Log object:
-$log = new Log();
+$log = new Log\Filesystem();
 
 $auth = new Auth($config, $baseuri);
 

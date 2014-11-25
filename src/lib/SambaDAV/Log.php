@@ -19,7 +19,7 @@
 
 namespace SambaDAV;
 
-class Log
+abstract class Log
 {
 	const NONE  = 0;
 	const ERROR = 1;
@@ -37,19 +37,10 @@ class Log
 		, self::TRACE => 'trace'
 		] ;
 
-	private $level;
-	private $filename = null;
+	protected $level;
 
-	public function
-	__construct ($level = self::WARN, $filename = null)
-	{
-		$this->level = $level;
-		$this->filename = $filename;
-
-		if (is_null($this->filename)) {
-			$this->filename = strftime(dirname(dirname(dirname(__FILE__))).'/log/%Y-%m-%d.log');
-		}
-	}
+	// Commit $data to log. Returns true/false.
+	abstract protected function commit ($level, $message);
 
 	public function
 	error ()
@@ -93,33 +84,6 @@ class Log
 		// Treat first argument as a sprintf format string, the rest as arguments:
 		$message .= call_user_func_array('sprintf', $args);
 
-		if ($fp = $this->fileOpenLockAppend()) {
-			fwrite($fp, $message);
-			$this->fileCloseUnlock($fp);
-		}
-	}
-
-	private function
-	fileOpenLockAppend ()
-	{
-		// Open the file for appending, lock it.
-		// Returns file handle, or false on error.
-		if (($fd = fopen($this->filename, 'a')) === false) {
-			return false;
-		}
-		if ((flock($fd, LOCK_EX)) === false) {
-			fclose($fd);
-			return false;
-		}
-		chmod($this->filename, 0600);
-		return $fd;
-	}
-
-	private function
-	fileCloseUnlock ($fd)
-	{
-		fflush($fd);
-		flock($fd, LOCK_UN);
-		fclose($fd);
+		return $this->commit($level, $message);
 	}
 }
