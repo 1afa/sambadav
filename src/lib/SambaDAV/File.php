@@ -37,7 +37,7 @@ class File extends DAV\FSExt\File
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
 	public function
-	__construct ($auth, $config, $smb, $uri, Directory $parent, $size, $smbflags, $mtime)
+	__construct ($auth, $config, $smb, $uri, $parent, $size, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->flags = new Propflags($smbflags);
