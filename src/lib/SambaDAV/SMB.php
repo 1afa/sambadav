@@ -116,7 +116,7 @@ class SMB
 	}
 
 	public function
-	put ($uri, $data, &$md5)
+	put ($uri, $data, &$md5, $proc = null)
 	{
 		Log::trace("SMB::put '%s'\n", $uri->uriFull());
 
@@ -125,8 +125,10 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = $this->makeCmd($uri->parentDir(), sprintf('put /proc/self/fd/4 "%s"', $uri->name()));
-		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
 
+		if (is_null($proc)) {
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
 		}
