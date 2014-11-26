@@ -67,4 +67,48 @@ EOT;
 			, 'acltest'
 			) , $parser->getShares());
 	}
+
+	public function
+	testGetDiskUsage ()
+	{
+		// Actual output from `smbclient [options] -c du`:
+		$outp = <<<EOT
+
+		50000 blocks of size 2097152. 48993 blocks available
+Total number of bytes: 108982041
+EOT;
+		$fd = fopen('data://text/plain,' . $outp, 'r');
+
+		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
+			array('getStdoutHandle'),
+			array(null, null));
+
+		$proc->method('getStdoutHandle')
+		     ->willReturn($fd);
+
+		$parser = new SMBClient\Parser($proc);
+		$this->assertEquals(array
+			( 2097152 * (50000 - 48993)	// Used space (bytes)
+			, 2097152 * 48993		// Free space (bytes)
+			) , $parser->getDiskUsage());
+	}
+
+	public function
+	testGetDiskUsageFail ()
+	{
+		// Actual output from `smbclient [options] -c du` with wrong pass:
+		$outp = "session setup failed: NT_STATUS_LOGON_FAILURE\n";
+
+		$fd = fopen('data://text/plain,' . $outp, 'r');
+
+		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
+			array('getStdoutHandle'),
+			array(null, null));
+
+		$proc->method('getStdoutHandle')
+		     ->willReturn($fd);
+
+		$parser = new SMBClient\Parser($proc);
+		$this->assertEquals(SMB::STATUS_UNAUTHENTICATED, $parser->getDiskUsage());
+	}
 }
