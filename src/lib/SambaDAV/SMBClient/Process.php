@@ -26,13 +26,15 @@ class Process
 	private $auth = false;
 	private $config;
 
-	public function __construct ($auth, $config)
+	public function
+	__construct ($auth, $config)
 	{
 		$this->auth = $auth;
 		$this->config = $config;
 	}
 
-	public function open ($args, $smbcmd)
+	public function
+	open ($args, $smbcmd)
 	{
 		// $args is assumed to have been shell-escaped by caller;
 		// append any extra smbclient options if specified:
@@ -90,7 +92,8 @@ class Process
 		return $this->fd[5];
 	}
 
-	private function writeAuthFile ()
+	private function
+	writeAuthFile ()
 	{
 		if ($this->auth->anonymous === false)
 		{
@@ -114,7 +117,8 @@ class Process
 		return true;
 	}
 
-	private function writeCommand ($smbcmd)
+	private function
+	writeCommand ($smbcmd)
 	{
 		if ($smbcmd !== false) {
 			if (fwrite($this->fd[0], $smbcmd) === false) {
@@ -126,7 +130,8 @@ class Process
 		return true;
 	}
 
-	public function __destruct ()
+	public function
+	__destruct ()
 	{
 		if (is_array($this->fd)) {
 			foreach ($this->fd as $fd) {
