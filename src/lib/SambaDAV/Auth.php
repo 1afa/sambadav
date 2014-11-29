@@ -93,7 +93,7 @@ class Auth
 		return true;
 	}
 
-	private function
+	public function
 	checkAuth ()
 	{
 		// If we did not get all creds, check whether that's okay or not:
@@ -134,7 +134,7 @@ class Auth
 	{
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
-		if ($this->config->ldap_auth === false) {
+		if ($this->config->ldap_auth !== true) {
 			return true;
 		}
 		// Should we do an AD-style bind or a fast bind?

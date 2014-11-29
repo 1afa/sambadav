@@ -92,7 +92,20 @@ class Process
 		return $this->fd[5];
 	}
 
-	private function
+	public function
+	getAuthFileHandle ()
+	{
+		// Separate getter for test mocking purposes:
+		return $this->fd[3];
+	}
+
+	public function
+	closeAuthFileHandle ()
+	{
+		fclose($this->getAuthFileHandle());
+	}
+
+	public function
 	writeAuthFile ()
 	{
 		if ($this->auth->anonymous === false)
@@ -108,12 +121,12 @@ class Process
 			if (is_string($domain = $this->auth->sambaDomain())) {
 				$creds[] = "domain=$domain";
 			}
-			if (fwrite($this->fd[3], implode("\n", $creds)) === false) {
-				fclose($this->fd[3]);
+			if (fwrite($this->getAuthFileHandle(), implode("\n", $creds)) === false) {
+				$this->closeAuthFileHandle();
 				return false;
 			}
 		}
-		fclose($this->fd[3]);
+		$this->closeAuthFileHandle();
 		return true;
 	}
 
