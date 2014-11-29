@@ -11,7 +11,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir');
 
 		$proc->expects($this->once())
@@ -28,7 +30,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir');
 
 		$proc->expects($this->once())
@@ -45,7 +49,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/subdir');
 
 		$proc->expects($this->once())
@@ -62,7 +68,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/subdir');
 
 		$proc->expects($this->once())
@@ -79,7 +87,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/file.txt');
 
 		$proc->expects($this->once())
@@ -96,7 +106,9 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 			array('open'),
 			array(null, null));
 
-		$smb = new SMB(null, null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/file.txt');
 
 		$proc->expects($this->once())

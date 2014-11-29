@@ -62,7 +62,7 @@ if ((time() % 5) == 0 && rand(0, 9) == 8) {
 	$cache->clean();
 }
 // Create SMB command class:
-$smb = new SMB($auth, $config);
+$smb = new SMB($auth, $config, $log);
 
 // No server, share and path known in root dir:
 $rootDir = new Directory($auth, $config, $cache, $log, $smb, new URI(), null, 'D', null);
