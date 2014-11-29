@@ -7,11 +7,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testGetShares ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir');
@@ -26,11 +26,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testLs_A ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir');
@@ -45,11 +45,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testLs_B ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/subdir');
@@ -64,11 +64,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testDu ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/subdir');
@@ -83,11 +83,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testGet ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/file.txt');
@@ -102,11 +102,11 @@ class SMBTest extends \PHPUnit_Framework_TestCase
 	public function
 	testPut ()
 	{
+		$log = new Log\Filesystem(Log::NONE);
+
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('open'),
-			array(null, null));
-
-		$log = new Log\Filesystem(Log::NONE);
+			array(null, null, $log));
 
 		$smb = new SMB(null, null, $log);
 		$uri = new URI('//server/share/dir/file.txt');

@@ -45,7 +45,7 @@ class SMB
 		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
 
 		if (is_null($proc)) {
-			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 		}
 		if ($proc->open($args, false) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -67,7 +67,7 @@ class SMB
 
 		// Allow injection of a proc object for testing:
 		if (is_null($proc)) {
-			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -85,7 +85,7 @@ class SMB
 		$scmd = $this->makeCmd($uri->path(), 'du');
 
 		if (is_null($proc)) {
-			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -129,7 +129,7 @@ class SMB
 		$scmd = $this->makeCmd($uri->parentDir(), sprintf('put /proc/self/fd/4 "%s"', $uri->name()));
 
 		if (is_null($proc)) {
-			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+			$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 		}
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;
@@ -176,7 +176,7 @@ class SMB
 		}
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = $this->makeCmd($path, $cmd);
-		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		$proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 
 		if ($proc->open($args, $scmd) === false) {
 			return self::STATUS_SMBCLIENT_ERROR;

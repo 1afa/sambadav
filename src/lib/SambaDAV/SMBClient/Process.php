@@ -25,12 +25,14 @@ class Process
 	private $proc = false;
 	private $auth = false;
 	private $config;
+	private $log;
 
 	public function
-	__construct ($auth, $config)
+	__construct ($auth, $config, $log)
 	{
 		$this->auth = $auth;
 		$this->config = $config;
+		$this->log = $log;
 	}
 
 	public function

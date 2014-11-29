@@ -9,10 +9,11 @@ class SMBParserTest extends \PHPUnit_Framework_TestCase
 	{
 		$outp = "Connection to server failed (Error NT_STATUS_UNSUCCESSFUL)\n";
 		$fd = fopen('data://text/plain,' . $outp, 'r');
+		$log = new Log\Filesystem(Log::NONE);
 
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('getStdoutHandle'),
-			array(null, null));
+			array(null, null, $log));
 
 		$proc->method('getStdoutHandle')
 		     ->willReturn($fd);
@@ -48,10 +49,11 @@ Workgroup|S4|SAMBA4
 Workgroup|WORKGROUP|RICHARD
 EOT;
 		$fd = fopen('data://text/plain,' . $outp, 'r');
+		$log = new Log\Filesystem(Log::NONE);
 
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('getStdoutHandle'),
-			array(null, null));
+			array(null, null, $log));
 
 		$proc->method('getStdoutHandle')
 		     ->willReturn($fd);
@@ -78,10 +80,11 @@ EOT;
 Total number of bytes: 108982041
 EOT;
 		$fd = fopen('data://text/plain,' . $outp, 'r');
+		$log = new Log\Filesystem(Log::NONE);
 
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('getStdoutHandle'),
-			array(null, null));
+			array(null, null, $log));
 
 		$proc->method('getStdoutHandle')
 		     ->willReturn($fd);
@@ -100,10 +103,11 @@ EOT;
 		$outp = "session setup failed: NT_STATUS_LOGON_FAILURE\n";
 
 		$fd = fopen('data://text/plain,' . $outp, 'r');
+		$log = new Log\Filesystem(Log::NONE);
 
 		$proc = $this->getMock('\SambaDAV\SMBClient\Process',
 			array('getStdoutHandle'),
-			array(null, null));
+			array(null, null, $log));
 
 		$proc->method('getStdoutHandle')
 		     ->willReturn($fd);

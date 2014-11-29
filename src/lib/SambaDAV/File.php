@@ -84,7 +84,7 @@ class File extends DAV\FSExt\File
 		// It's not pretty, but it makes real streaming possible.
 		$this->log->trace("File::get '%s'\n", $this->uri->uriFull());
 
-		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 
 		switch ($this->smb->get($this->uri, $this->proc)) {
 			case SMB::STATUS_OK: return $this->proc->getOutputStreamHandle();
