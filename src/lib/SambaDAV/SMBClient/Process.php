@@ -93,6 +93,19 @@ class Process
 	}
 
 	public function
+	getStdinHandle ()
+	{
+		// Separate getter for test mocking purposes:
+		return $this->fd[0];
+	}
+
+	public function
+	closeStdinHandle ()
+	{
+		fclose($this->getStdinHandle());
+	}
+
+	public function
 	getAuthFileHandle ()
 	{
 		// Separate getter for test mocking purposes:
@@ -130,16 +143,16 @@ class Process
 		return true;
 	}
 
-	private function
+	public function
 	writeCommand ($smbcmd)
 	{
 		if ($smbcmd !== false) {
-			if (fwrite($this->fd[0], $smbcmd) === false) {
-				fclose($this->fd[0]);
+			if (fwrite($this->getStdinHandle(), $smbcmd) === false) {
+				$this->closeStdinHandle();
 				return false;
 			}
 		}
-		fclose($this->fd[0]);
+		$this->closeStdinHandle();
 		return true;
 	}
 
