@@ -65,9 +65,11 @@ class Process
 			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
 
 		if (!($this->proc = proc_open($cmd, $pipes, $this->fd, '/', $env))) {
+			$this->log->error("proc_open failed: %s\n", $cmd);
 			return false;
 		}
 		if (!is_resource($this->proc)) {
+			$this->log->error("proc_open did not return valid resource\n");
 			return false;
 		}
 		if (!$this->writeAuthFile()) {
@@ -137,6 +139,7 @@ class Process
 				$creds[] = "domain=$domain";
 			}
 			if (fwrite($this->getAuthFileHandle(), implode("\n", $creds)) === false) {
+				$this->log->error("fwrite to auth file failed\n");
 				$this->closeAuthFileHandle();
 				return false;
 			}
@@ -150,6 +153,7 @@ class Process
 	{
 		if ($smbcmd !== false) {
 			if (fwrite($this->getStdinHandle(), $smbcmd) === false) {
+				$this->log->error("fwrite to stdin failed\n");
 				$this->closeStdinHandle();
 				return false;
 			}
