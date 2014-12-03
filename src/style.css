@@ -81,3 +81,7 @@ p#manual {
 	padding-right: 1em;
 	border-right: 2px solid #d8d8e2;
 }
+#sambadav-logo {
+	float: right;
+	margin: 5px;
+}
