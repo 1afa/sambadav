@@ -25,14 +25,18 @@ class Process
 	private $proc = false;
 	private $auth = false;
 	private $config;
+	private $log;
 
-	public function __construct ($auth, $config)
+	public function
+	__construct ($auth, $config, $log)
 	{
 		$this->auth = $auth;
 		$this->config = $config;
+		$this->log = $log;
 	}
 
-	public function open ($args, $smbcmd)
+	public function
+	open ($args, $smbcmd)
 	{
 		// $args is assumed to have been shell-escaped by caller;
 		// append any extra smbclient options if specified:
@@ -61,9 +65,11 @@ class Process
 			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
 
 		if (!($this->proc = proc_open($cmd, $pipes, $this->fd, '/', $env))) {
+			$this->log->error("proc_open failed: %s\n", $cmd);
 			return false;
 		}
 		if (!is_resource($this->proc)) {
+			$this->log->error("proc_open did not return valid resource\n");
 			return false;
 		}
 		if (!$this->writeAuthFile()) {
@@ -90,7 +96,34 @@ class Process
 		return $this->fd[5];
 	}
 
-	private function writeAuthFile ()
+	public function
+	getStdinHandle ()
+	{
+		// Separate getter for test mocking purposes:
+		return $this->fd[0];
+	}
+
+	public function
+	closeStdinHandle ()
+	{
+		fclose($this->getStdinHandle());
+	}
+
+	public function
+	getAuthFileHandle ()
+	{
+		// Separate getter for test mocking purposes:
+		return $this->fd[3];
+	}
+
+	public function
+	closeAuthFileHandle ()
+	{
+		fclose($this->getAuthFileHandle());
+	}
+
+	public function
+	writeAuthFile ()
 	{
 		if ($this->auth->anonymous === false)
 		{
@@ -105,28 +138,32 @@ class Process
 			if (is_string($domain = $this->auth->sambaDomain())) {
 				$creds[] = "domain=$domain";
 			}
-			if (fwrite($this->fd[3], implode("\n", $creds)) === false) {
-				fclose($this->fd[3]);
+			if (fwrite($this->getAuthFileHandle(), implode("\n", $creds)) === false) {
+				$this->log->error("fwrite to auth file failed\n");
+				$this->closeAuthFileHandle();
 				return false;
 			}
 		}
-		fclose($this->fd[3]);
+		$this->closeAuthFileHandle();
 		return true;
 	}
 
-	private function writeCommand ($smbcmd)
+	public function
+	writeCommand ($smbcmd)
 	{
 		if ($smbcmd !== false) {
-			if (fwrite($this->fd[0], $smbcmd) === false) {
-				fclose($this->fd[0]);
+			if (fwrite($this->getStdinHandle(), $smbcmd) === false) {
+				$this->log->error("fwrite to stdin failed\n");
+				$this->closeStdinHandle();
 				return false;
 			}
 		}
-		fclose($this->fd[0]);
+		$this->closeStdinHandle();
 		return true;
 	}
 
-	public function __destruct ()
+	public function
+	__destruct ()
 	{
 		if (is_array($this->fd)) {
 			foreach ($this->fd as $fd) {

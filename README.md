@@ -666,9 +666,9 @@ smbclient -U myuser //myserver/myshare -c 'ls'
   messages. SabreDAV requires a number of PHP extensions; you might need to
   enable some.
 
-- Is `$enable_webfolders` set to the precise value of `TRUE` in
+- Is `$enable_webfolders` set to the precise value of `true` in
   `/config/share_userhomes.inc.php`? That variable is the master switch; if
-  it's set to anything but `TRUE`, `server.php` bails out early with a 404 Not
+  it's set to anything but `true`, `server.php` bails out early with a 404 Not
   Found error.
 
 - If you're getting errors, try checking the server logs. Pay attention to the

@@ -149,7 +149,7 @@ class Filesystem extends \SambaDAV\Cache
 			return false;
 		}
 		// Write to file:
-		if ((fwrite($fd, $raw)) === false) {
+		if (fwrite($fd, $raw) === false) {
 			return false;
 		}
 		fflush($fd);

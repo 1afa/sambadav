@@ -19,61 +19,71 @@
 
 namespace SambaDAV;
 
-class Log
+abstract class Log
 {
-	// Set this to true to enable trace-level logging:
-	private static $traceEnabled = false;
-	private static $filename = null;
+	const NONE  = 0;
+	const ERROR = 1;
+	const WARN  = 2;
+	const INFO  = 3;
+	const DEBUG = 4;
+	const TRACE = 5;
 
-	public static function
+	private $lnames =
+		[ self::NONE  => 'none'
+		, self::ERROR => 'error'
+		, self::WARN  => 'warn'
+		, self::INFO  => 'info'
+		, self::DEBUG => 'debug'
+		, self::TRACE => 'trace'
+		] ;
+
+	protected $level;
+
+	// Commit $data to log. Returns true/false.
+	abstract protected function commit ($level, $message);
+
+	public function
+	error ()
+	{
+		$this->log(self::ERROR, func_get_args());
+	}
+
+	public function
+	warn ()
+	{
+		$this->log(self::WARN, func_get_args());
+	}
+
+	public function
+	info ()
+	{
+		$this->log(self::INFO, func_get_args());
+	}
+
+	public function
+	debug ()
+	{
+		$this->log(self::DEBUG, func_get_args());
+	}
+
+	public function
 	trace ()
 	{
-		if (self::$traceEnabled === false) {
+		$this->log(self::TRACE, func_get_args());
+	}
+
+	private function
+	log ($level, $args)
+	{
+		// Message logged below threshold?
+		if ($level > $this->level) {
 			return;
 		}
-		if (func_num_args() === 0) {
-			return;
-		}
+		$message = strftime('%Y-%m-%d %H:%M:%S: ') . $this->lnames[$level] . ': ';
+
 		// Treat first argument as a sprintf format string, the rest as arguments:
-		$args = func_get_args();
-		$message = call_user_func_array('sprintf', $args);
+		$message .= call_user_func_array('sprintf', $args);
 
-		if ($fp = self::fileOpenLockAppend()) {
-			fwrite($fp, $message);
-			self::fileCloseUnlock($fp);
-		}
-	}
-
-	private static function
-	initFilename ()
-	{
-		self::$filename = strftime(dirname(dirname(dirname(__FILE__))).'/log/trace-%Y-%m-%d.log');
-	}
-
-	private static function
-	fileOpenLockAppend ()
-	{
-		// Open the file for appending, lock it.
-		// Returns file handle, or false on error.
-		if (self::$filename === null) {
-			self::initFilename();
-		}
-		if (($fd = fopen(self::$filename, 'a')) === false) {
-			return false;
-		}
-		if ((flock($fd, LOCK_EX)) === false) {
-			fclose($fd);
-			return false;
-		}
-		chmod(self::$filename, 0600);
-		return $fd;
-	}
-
-	private static function
-	fileCloseUnlock ($fd)
-	{
-		fflush($fd);
-		flock($fd, LOCK_UN);
-		fclose($fd);
+		return $this->commit($level, $message);
 	}
 }

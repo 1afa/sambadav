@@ -32,10 +32,13 @@ class File extends DAV\FSExt\File
 
 	private $auth;
 	private $config;
+	private $log;
+	private $smb;
 
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
-	public function __construct ($auth, $config, $uri, Directory $parent, $size, $smbflags, $mtime)
+	public function
+	__construct ($auth, $config, $log, $smb, $uri, $parent, $size, $smbflags, $mtime)
 	{
 		$this->uri = $uri;
 		$this->flags = new Propflags($smbflags);
@@ -45,17 +48,21 @@ class File extends DAV\FSExt\File
 
 		$this->auth = $auth;
 		$this->config = $config;
+		$this->log = $log;
+		$this->smb = $smb;
 	}
 
-	public function getName ()
+	public function
+	getName ()
 	{
 		return $this->uri->name();
 	}
 
-	public function setName ($name)
+	public function
+	setName ($name)
 	{
-		Log::trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
-		switch (SMB::rename($this->auth, $this->config, $this->uri, $name)) {
+		$this->log->trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
+		switch ($this->smb->rename($this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->uri->rename($name);
@@ -68,17 +75,18 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function get ()
+	public function
+	get ()
 	{
 		// NB: because we return a file resource, we must ensure that
 		// the proc object stays alive after we leave this function.
 		// So we use a global class variable to store it.
 		// It's not pretty, but it makes real streaming possible.
-		Log::trace("File::get '%s'\n", $this->uri->uriFull());
+		$this->log->trace("File::get '%s'\n", $this->uri->uriFull());
 
-		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config);
+		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 
-		switch (SMB::get($this->uri, $this->proc)) {
+		switch ($this->smb->get($this->uri, $this->proc)) {
 			case SMB::STATUS_OK: return $this->proc->getOutputStreamHandle();
 			case SMB::STATUS_NOTFOUND: $this->proc = null; $this->exc_notfound();
 			case SMB::STATUS_SMBCLIENT_ERROR: $this->proc = null; $this->exc_smbclient();
@@ -87,10 +95,11 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function put ($data)
+	public function
+	put ($data)
 	{
-		Log::trace("File::put '%s'\n", $this->uri->uriFull());
-		switch (SMB::put($this->auth, $this->config, $this->uri, $data, $md5)) {
+		$this->log->trace("File::put '%s'\n", $this->uri->uriFull());
+		switch ($this->smb->put($this->uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				$this->etag = ($md5 === null) ? null : "\"$md5\"";
@@ -103,17 +112,19 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	public function putRange ($data, $offset)
+	public function
+	putRange ($data, $offset)
 	{
 		// Sorry bro, smbclient is not that advanced:
 		// Override the inherited method from the base class:
-		Log::trace('EXCEPTION: putRange "'.$this->uri->uriFull()."\" not implemented\n");
+		$this->log->trace('EXCEPTION: putRange "'.$this->uri->uriFull()."\" not implemented\n");
 		throw new DAV\Exception\NotImplemented("PutRange() not available due to limitations of smbclient");
 	}
 
-	public function getETag ()
+	public function
+	getETag ()
 	{
-		Log::trace("File::getETag '%s'\n", $this->uri->uriFull());
+		$this->log->trace("File::getETag '%s'\n", $this->uri->uriFull());
 
 		if ($this->etag !== null) {
 			return $this->etag;
@@ -139,39 +150,46 @@ class File extends DAV\FSExt\File
 		return $this->etag;
 	}
 
-	public function getContentType ()
+	public function
+	getContentType ()
 	{
-		return NULL;
+		return null;
 	}
 
-	public function getSize ()
+	public function
+	getSize ()
 	{
 		return $this->size;
 	}
 
-	public function getLastModified ()
+	public function
+	getLastModified ()
 	{
 		return $this->mtime;
 	}
 
-	public function getIsHidden ()
+	public function
+	getIsHidden ()
 	{
 		return $this->flags->get('H');
 	}
 
-	public function getIsReadonly ()
+	public function
+	getIsReadonly ()
 	{
 		return $this->flags->get('R');
 	}
 
-	public function getWin32Props ()
+	public function
+	getWin32Props ()
 	{
-		return $this->flags->to_win32();
+		return $this->flags->toWin32();
 	}
 
-	public function updateProperties ($mutations)
+	public function
+	updateProperties ($mutations)
 	{
-		Log::trace("File::updateProperties '%s'\n", $this->uri->uriFull());
+		$this->log->trace("File::updateProperties '%s'\n", $this->uri->uriFull());
 
 		$new_flags = clone $this->flags;
 		$invalidate = false;
@@ -188,7 +206,7 @@ class File extends DAV\FSExt\File
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
 					// Decode into array of flags:
-					$new_flags->from_win32($val);
+					$new_flags->fromWin32($val);
 					break;
 
 				case '{DAV:}ishidden':
@@ -208,7 +226,7 @@ class File extends DAV\FSExt\File
 		// modeflags necessary to set and unset the proper flags with
 		// smbclient's setmode command:
 		foreach ($this->flags->diff($new_flags) as $modeflag) {
-			switch (SMB::setMode($this->auth, $this->config, $this->uri, $modeflag)) {
+			switch ($this->smb->setMode($this->uri, $modeflag)) {
 				case SMB::STATUS_OK:
 					$invalidate = true;
 					continue;
@@ -227,10 +245,11 @@ class File extends DAV\FSExt\File
 		return true;
 	}
 
-	public function delete ()
+	public function
+	delete ()
 	{
-		Log::trace("File::delete '%s'\n", $this->uri->uriFull());
-		switch (SMB::rm($this->auth, $this->config, $this->uri)) {
+		$this->log->trace("File::delete '%s'\n", $this->uri->uriFull());
+		switch ($this->smb->rm($this->uri)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
 				return true;
@@ -242,38 +261,43 @@ class File extends DAV\FSExt\File
 		}
 	}
 
-	private function invalidate_parent ()
+	private function
+	invalidate_parent ()
 	{
 		if ($this->parent !== false) {
 			$this->parent->cache_destroy();
 		}
 	}
 
-	private function exc_forbidden ()
+	private function
+	exc_forbidden ()
 	{
 		// Only one type of Forbidden error right now: invalid filename or pathname
 		$m = 'Forbidden: invalid pathname or filename';
-		Log::trace("EXCEPTION: $m\n");
+		$this->log->warn("EXCEPTION: $m\n");
 		throw new DAV\Exception\Forbidden($m);
 	}
 
-	private function exc_notfound ()
+	private function
+	exc_notfound ()
 	{
 		$m = sprintf("Not found: '%s'", $this->uri->uriFull());
-		Log::trace("EXCEPTION: $m\n");
+		$this->log->warn("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotFound($m);
 	}
 
-	private function exc_smbclient ()
+	private function
+	exc_smbclient ()
 	{
-		Log::trace("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
+		$this->log->warn("EXCEPTION: '%s': smbclient error\n", $this->uri->uriFull());
 		throw new DAV\Exception('smbclient error');
 	}
 
-	private function exc_unauthenticated ()
+	private function
+	exc_unauthenticated ()
 	{
 		$m = sprintf("'%s' not authenticated for '%s'", $this->auth->user, $this->uri->uriFull());
-		Log::trace("EXCEPTION: $m\n");
+		$this->log->warn("EXCEPTION: $m\n");
 		throw new DAV\Exception\NotAuthenticated($m);
 	}
 }

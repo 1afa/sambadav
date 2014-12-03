@@ -12,5 +12,5 @@ matrix:
     - php: hhvm
 
 script:
-  - ( cd src; composer dump-autoload )
+  - ( cd src; composer install )
   - phpunit --configuration tests/phpunit.xml
