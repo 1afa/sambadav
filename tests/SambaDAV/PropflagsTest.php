@@ -105,6 +105,42 @@ class PropflagsTest extends \PHPUnit_Framework_TestCase
 	}
 
 	public function
+	testSetFalse ()
+	{
+		$a = new PropFlags();
+		$a->set('H', false);
+		$this->assertFalse($a->get('H'));
+		$this->assertTrue($a->get('N'));	// Normal
+	}
+
+	public function
+	testSetTrue ()
+	{
+		$a = new PropFlags();
+		$a->set('H', true);
+		$this->assertTrue($a->get('H'));
+		$this->assertFalse($a->get('N'));	// Normal
+	}
+
+	public function
+	testSetStringZero ()
+	{
+		$a = new PropFlags();
+		$a->set('A', (bool)'0');
+		$this->assertFalse($a->get('A'));
+		$this->assertTrue($a->get('N'));	// Normal
+	}
+
+	public function
+	testSetStringOne ()
+	{
+		$a = new PropFlags();
+		$a->set('A', (bool)'1');
+		$this->assertTrue($a->get('A'));
+		$this->assertFalse($a->get('N'));	// Normal
+	}
+
+	public function
 	testDiff_A ()
 	{
 		$a = new PropFlags('H');
