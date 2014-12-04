@@ -27,19 +27,19 @@ class Propflags
 	// NB: the 'N' flag occurs twice in the smbclient source, but we
 	// interpret 'N' to always stand for NORMAL, based on actual listings.
 	private $flags = array
-		( 'R' => 0	// FILE_ATTRIBUTE_READONLY
-		, 'H' => 0	// FILE_ATTRIBUTE_HIDDEN
-		, 'S' => 0	// FILE_ATTRIBUTE_SYSTEM
-		, 'D' => 0	// FILE_ATTRIBUTE_DIRECTORY
-		, 'A' => 0	// FILE_ATTRIBUTE_ARCHIVE
-		, 'N' => 0	// FILE_ATTRIBUTE_NORMAL
-		, 'T' => 0	// FILE_ATTRIBUTE_TEMPORARY
-		, 's' => 0	// FILE_ATTRIBUTE_SPARSE
-		, 'r' => 0	// FILE_ATTRIBUTE_REPARSE_POINT
-		, 'C' => 0	// FILE_ATTRIBUTE_COMPRESSED
-		, 'O' => 0	// FILE_ATTRIBUTE_OFFLINE
-	//	, 'N' => 0	// FILE_ATTRIBUTE_NONINDEXED
-		, 'E' => 0	// FILE_ATTRIBUTE_ENCRYPTED
+		( 'R' => false	// FILE_ATTRIBUTE_READONLY
+		, 'H' => false	// FILE_ATTRIBUTE_HIDDEN
+		, 'S' => false	// FILE_ATTRIBUTE_SYSTEM
+		, 'D' => false	// FILE_ATTRIBUTE_DIRECTORY
+		, 'A' => false	// FILE_ATTRIBUTE_ARCHIVE
+		, 'N' => false	// FILE_ATTRIBUTE_NORMAL
+		, 'T' => false	// FILE_ATTRIBUTE_TEMPORARY
+		, 's' => false	// FILE_ATTRIBUTE_SPARSE
+		, 'r' => false	// FILE_ATTRIBUTE_REPARSE_POINT
+		, 'C' => false	// FILE_ATTRIBUTE_COMPRESSED
+		, 'O' => false	// FILE_ATTRIBUTE_OFFLINE
+	//	, 'N' => false	// FILE_ATTRIBUTE_NONINDEXED
+		, 'E' => false	// FILE_ATTRIBUTE_ENCRYPTED
 		) ;
 
 	// These values are from /libcli/smb/smb_constants.h in the Samba
@@ -76,7 +76,7 @@ class Propflags
 			return $this->init = false;
 		}
 		foreach (array_keys($this->flags) as $flag) {
-			$this->flags[$flag] = ($flags & $this->bitmask[$flag]) ? 1 : 0;
+			$this->flags[$flag] = (bool)($flags & $this->bitmask[$flag]);
 		}
 		$this->updateNormal();
 		return $this->init = true;
@@ -93,7 +93,9 @@ class Propflags
 		// '{urn:schemas-microsoft-com:}Win32FileAttributes' DAV property,
 		// used by the DAV client in Windows.
 		foreach (array_keys($this->flags) as $flag) {
-			if ($this->flags[$flag]) $msflags |= $this->bitmask[$flag];
+			if ($this->flags[$flag]) {
+				$msflags |= $this->bitmask[$flag];
+			}
 		}
 		return sprintf('%08x', $msflags);
 	}
@@ -106,18 +108,22 @@ class Propflags
 		// setmode` format, so '+-shar'. These are the only flags that
 		// smbclient supports for toggling, so ignore the rest.
 
-		$ret = array();
+		$ret = [];
 		$on = $off = '';
 
-		if (!$this->init || !$that->init) return $ret;
-
-		foreach (array('S','H','A','R') as $flag)
+		if (!$this->init || !$that->init) {
+			return $ret;
+		}
+		foreach (['S','H','A','R'] as $flag)
 		{
 			// Flags that are on in ours and off in theirs must be turned off:
-			if ($this->flags[$flag] && !$that->flags[$flag]) $off .= strtolower($flag);
-
+			if ($this->flags[$flag] && !$that->flags[$flag]) {
+				$off .= strtolower($flag);
+			}
 			// Flags that are on in theirs and off in ours must be turned on:
-			if ($that->flags[$flag] && !$this->flags[$flag]) $on .= strtolower($flag);
+			if ($that->flags[$flag] && !$this->flags[$flag]) {
+				$on .= strtolower($flag);
+			}
 		}
 		if (strlen($off)) $ret[] = '-'.$off;
 		if (strlen($on))  $ret[] = '+'.$on;
@@ -128,7 +134,7 @@ class Propflags
 	public function
 	set ($flag, $val)
 	{
-		$this->flags[$flag] = ((int)$val) ? 1 : 0;
+		$this->flags[$flag] = $val;
 		$this->updateNormal();
 		$this->init = true;
 	}
@@ -145,7 +151,7 @@ class Propflags
 		// The 'smbflags' are the ones found in the output of
 		// smbclient's `ls` command. They are case-sensitive.
 		foreach (array_keys($this->flags) as $flag) {
-			$this->flags[$flag] = (strpos($smbflags, $flag) === false) ? 0 : 1;
+			$this->flags[$flag] = (strpos($smbflags, $flag) !== false);
 		}
 		$this->updateNormal();
 		$this->init = true;
@@ -155,10 +161,10 @@ class Propflags
 	updateNormal ()
 	{
 		// The N (NORMAL) flag can only be set if no other flags are set:
-		if ($this->flags['N'] === 1) {
+		if ($this->flags['N']) {
 			foreach ($this->flags as $flag => $value) {
-				if ($flag !== 'N' && $value === 1) {
-					$this->flags['N'] = 0;
+				if ($flag !== 'N' && $value) {
+					$this->flags['N'] = false;
 					break;
 				}
 			}
@@ -166,10 +172,10 @@ class Propflags
 		}
 		// If no flags are set, ensure that N is set:
 		foreach ($this->flags as $flag => $value) {
-			if ($value === 1) {
+			if ($value) {
 				return;
 			}
 		}
-		$this->flags['N'] = 1;
+		$this->flags['N'] = true;
 	}
 }

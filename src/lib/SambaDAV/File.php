@@ -210,11 +210,11 @@ class File extends DAV\FSExt\File
 					break;
 
 				case '{DAV:}ishidden':
-					$new_flags->set('H', $val);
+					$new_flags->set('H', (bool)$val);
 					break;
 
 				case '{DAV:}isreadonly':
-					$new_flags->set('R', $val);
+					$new_flags->set('R', (bool)$val);
 					break;
 
 				default:
