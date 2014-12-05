@@ -26,10 +26,10 @@ class BrowserPlugin extends DAV\Browser\Plugin
 	private $anonymous_only;
 
 	public function
-	__construct ($anonymous_only = false)
+	__construct ($config)
 	{
 		parent::__construct();
-		$this->anonymous_only = $anonymous_only;
+		$this->config = $config;
 	}
 
 	public function
@@ -55,7 +55,7 @@ class BrowserPlugin extends DAV\Browser\Plugin
 
 HTML;
 
-		if ($this->anonymous_only === false) {
+		if ($this->config->anonymous_only === false) {
 			$html .= "
     <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>";
 		}

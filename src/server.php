@@ -81,7 +81,7 @@ $lockPlugin = new DAV\Locks\Plugin($lockBackend);
 $server->addPlugin($lockPlugin);
 
 // Browser plugin, for plain directory listings:
-$plugin = new BrowserPlugin($config->anonymous_only);
+$plugin = new BrowserPlugin($config);
 $server->addPlugin($plugin);
 
 // Content-type plugin:
