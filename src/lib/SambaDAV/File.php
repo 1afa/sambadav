@@ -264,7 +264,7 @@ class File extends DAV\FSExt\File
 	private function
 	invalidate_parent ()
 	{
-		if ($this->parent !== false) {
+		if (!is_null($this->parent)) {
 			$this->parent->cache_destroy();
 		}
 	}
