@@ -29,4 +29,23 @@ class FileTest extends \PHPUnit_Framework_TestCase
 
 		$this->assertEquals('new.pdf', $uri->name());
 	}
+
+	public function
+	testPut ()
+	{
+		$uri = new URI('//server/share/dir/file.txt');
+		$log = new Log\Filesystem(Log::NONE);
+
+		$data = 'Hello, brave new world.';
+
+		$smb = $this->getMock('\SambaDAV\SMB', array('put'), array(null, null, $log));
+		$smb->expects($this->once())
+		    ->method('put')
+		    ->with($uri, $data)
+		    ->willReturn(SMB::STATUS_OK);
+
+		$file = new File(null, null, $log, $smb, $uri, null, null, null, null);
+
+		$this->assertEquals(null, $file->put($data));
+	}
 }
