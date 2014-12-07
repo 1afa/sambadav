@@ -23,33 +23,21 @@ use Sabre\DAV;
 
 class File extends DAV\FSExt\File
 {
-	private $uri;
 	private $etag = null;
-	private $size;		// File size (bytes)
-	private $flags;		// SMB flags
-	private $mtime;		// Modification time (Unix timestamp)
-	private $parent;	// Parent object
-
-	private $auth;
-	private $config;
-	private $log;
-	private $smb;
-
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
 	public function
 	__construct ($auth, $config, $log, $smb, $uri, $parent, $size, $smbflags, $mtime)
 	{
-		$this->uri = $uri;
-		$this->flags = new Propflags($smbflags);
-		$this->size = $size;
-		$this->mtime = $mtime;
-		$this->parent = $parent;
-
-		$this->auth = $auth;
-		$this->config = $config;
-		$this->log = $log;
-		$this->smb = $smb;
+		$this->auth = $auth;				// Auth object
+		$this->config = $config;			// Config object
+		$this->log = $log;				// Log object
+		$this->smb = $smb;				// SMB object
+		$this->uri = $uri;				// URI object of this resource
+		$this->flags = new Propflags($smbflags);	// SMB flags
+		$this->size = $size;				// File size (bytes)
+		$this->mtime = $mtime;				// Modification time (Unix timestamp)
+		$this->parent = $parent;			// Directory object of parent
 	}
 
 	public function
