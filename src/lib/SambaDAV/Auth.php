@@ -156,7 +156,7 @@ class Auth
 		return true;
 	}
 
-	private function
+	public function
 	checkSambaPatterns ()
 	{
 		$this->samba_username = $this->user;

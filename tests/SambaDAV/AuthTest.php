@@ -94,4 +94,19 @@ class AuthTest extends \PHPUnit_Framework_TestCase
 		$auth->user = '\\f';
 		$this->assertEquals('f', $auth->fillPattern('%u'));
 	}
+
+	public function
+	testCheckSambaPatterns ()
+	{
+		$config = new Config();
+		$config->samba_username_pattern = '%u';
+		$config->samba_domain_pattern = null;
+
+		$auth = new Auth($config);
+		$auth->user = 'joe';
+
+		$auth->checkSambaPatterns();
+		$this->assertEquals('joe', $auth->sambaUsername());
+		$this->assertEquals(null, $auth->sambaDomain());
+	}
 }
