@@ -23,33 +23,21 @@ use Sabre\DAV;
 
 class File extends DAV\FSExt\File
 {
-	private $uri;
 	private $etag = null;
-	private $size;		// File size (bytes)
-	private $flags;		// SMB flags
-	private $mtime;		// Modification time (Unix timestamp)
-	private $parent;	// Parent object
-
-	private $auth;
-	private $config;
-	private $log;
-	private $smb;
-
 	private $proc = null;	// Global storage, so that this object does not go out of scope when get() returns
 
 	public function
 	__construct ($auth, $config, $log, $smb, $uri, $parent, $size, $smbflags, $mtime)
 	{
-		$this->uri = $uri;
-		$this->flags = new Propflags($smbflags);
-		$this->size = $size;
-		$this->mtime = $mtime;
-		$this->parent = $parent;
-
-		$this->auth = $auth;
-		$this->config = $config;
-		$this->log = $log;
-		$this->smb = $smb;
+		$this->auth = $auth;				// Auth object
+		$this->config = $config;			// Config object
+		$this->log = $log;				// Log object
+		$this->smb = $smb;				// SMB object
+		$this->uri = $uri;				// URI object of this resource
+		$this->flags = new Propflags($smbflags);	// SMB flags
+		$this->size = $size;				// File size (bytes)
+		$this->mtime = $mtime;				// Modification time (Unix timestamp)
+		$this->parent = $parent;			// Directory object of parent
 	}
 
 	public function
@@ -194,31 +182,20 @@ class File extends DAV\FSExt\File
 		$new_flags = clone $this->flags;
 		$invalidate = false;
 
-		foreach ($mutations as $key => $val) {
+		foreach ($mutations as $key => $value) {
 			switch ($key) {
-				case '{urn:schemas-microsoft-com:}Win32CreationTime':
-				case '{urn:schemas-microsoft-com:}Win32LastAccessTime':
-				case '{urn:schemas-microsoft-com:}Win32LastModifiedTime':
-					// Silently ignore these;
-					// smbclient has no 'touch' command or similar:
-					break;
-
 				case '{urn:schemas-microsoft-com:}Win32FileAttributes':
 					// ex. '00000000', '00000020'
 					// Decode into array of flags:
-					$new_flags->fromWin32($val);
+					$new_flags->fromWin32($value);
 					break;
 
 				case '{DAV:}ishidden':
-					$new_flags->set('H', (bool)$val);
+					$new_flags->set('H', (bool)$value);
 					break;
 
 				case '{DAV:}isreadonly':
-					$new_flags->set('R', (bool)$val);
-					break;
-
-				default:
-					// TODO: logging!
+					$new_flags->set('R', (bool)$value);
 					break;
 			}
 		}
@@ -264,7 +241,7 @@ class File extends DAV\FSExt\File
 	private function
 	invalidate_parent ()
 	{
-		if ($this->parent !== false) {
+		if (!is_null($this->parent)) {
 			$this->parent->cache_destroy();
 		}
 	}

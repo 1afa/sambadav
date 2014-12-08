@@ -19,30 +19,30 @@
 
 namespace SambaDAV;
 
-use Sabre\DAV;
+use Sabre\DAV,
+    Sabre\HTTP\URLUtil,
+    Sabre\HTTP\RequestInterface,
+    Sabre\HTTP\ResponseInterface;
 
 class BrowserPlugin extends DAV\Browser\Plugin
 {
-	private $anonymous_only;
-
 	public function
-	__construct ($anonymous_only = false)
+	__construct ($config)
 	{
 		parent::__construct();
-		$this->anonymous_only = $anonymous_only;
+		$this->config = $config;
 	}
 
 	public function
 	generateDirectoryIndex ($path)
 	{
 		$version = (DAV\Server::$exposeVersion)
-			? ' ' . DAV\Version::VERSION ."-". DAV\Version::STABILITY
+			? DAV\Version::VERSION
 			: '';
 
-		$parent = $this->server->tree->getNodeForPath($path);
+		$node = $this->server->tree->getNodeForPath($path);
 
-		$html =
-<<<HTML
+		$html = <<<HTML
 <!DOCTYPE html>
 <html>
   <head>
@@ -54,34 +54,30 @@ class BrowserPlugin extends DAV\Browser\Plugin
   <body>
 
 HTML;
-
-		if ($this->anonymous_only === false) {
+		if ($this->config->anonymous_only === false) {
 			$html .= "
     <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>";
 		}
 
-		$html .=
-<<<HTML
-    <h1>{$this->escapeHTML($parent->uri->uriFull())}</h1>
+		$html .= <<<HTML
+    <h1>{$this->escapeHTML($node->uri->uriFull())}</h1>
     <table id="actions">
       <tbody>
 
 HTML;
-
 		$output = '';
-
 		if ($this->enablePost) {
-			$this->server->broadcastEvent('onHTMLActionsPanel', array($parent, &$output));
+			$this->server->emit('onHTMLActionsPanel', [$node, &$output]);
 		}
-		$html .= $output;
-
-		$html .=
-<<<HTML
+		if ($output) {
+			$html .= $output;
+		}
+		$html .= <<<HTML
       </tbody>
     </table>
     <table>
       <colgroup>
-        <col style="width:15px"/>
+        <col width="15px"/>
         <col/>
         <col/>
         <col/>
@@ -99,24 +95,14 @@ HTML;
       <tbody>
 
 HTML;
-		$files = $this->server->getPropertiesForPath($path, array(
-			'{DAV:}displayname',
-			'{DAV:}resourcetype',
-			'{DAV:}getcontenttype',
-			'{DAV:}getcontentlength',
-			'{DAV:}getlastmodified',
-		), 1);
 
+		// If path is empty, there is no parent:
 		if ($path) {
-			list($parentUri) = DAV\URLUtil::splitPath($path);
-			$fullPath = DAV\URLUtil::encodePath($this->server->getBaseUri() . $parentUri);
-
-			$icon = "<a href=\"$fullPath\"><img src=\"{$this->server->getBaseUri()}dir.png\" alt=\"Parent\"/></a>";
-
-		$html .=
-<<<HTML
+			list($parentUri) = URLUtil::splitPath($path);
+			$fullPath = URLUtil::encodePath($this->server->getBaseUri() . $parentUri);
+			$html .= <<<HTML
         <tr class="dir">
-          <td>$icon</td>
+          <td><a href="$fullPath"><img src="{$this->server->getBaseUri()}dir.png" alt="Parent"/></a></td>
           <td><a href="$fullPath">..</a></td>
           <td>[parent]</td>
           <td></td>
@@ -125,81 +111,69 @@ HTML;
 
 HTML;
 		}
+		if ($node instanceof DAV\ICollection) {
+			$subNodes = $this->server->getPropertiesForChildren($path, [
+				'{DAV:}displayname',
+				'{DAV:}resourcetype',
+				'{DAV:}getcontenttype',
+				'{DAV:}getcontentlength',
+				'{DAV:}getlastmodified',
+			]);
+			foreach ($subNodes as $subPath => $subProps)
+			{
+				$subNode = $this->server->tree->getNodeForPath($subPath);
+				$fullPath = URLUtil::encodePath($this->server->getBaseUri() . $subPath);
+				list(, $displayPath) = URLUtil::splitPath($subPath);
 
-		// Sort files by href (filename):
-		uasort($files, 'self::compare_filenames');
-
-		foreach ($files as $file)
-		{
-			// This is the current directory, we can skip it
-			if (rtrim($file['href'],'/') == $path) {
-				continue;
+				$subNodes[$subPath]['subNode'] = $subNode;
+				$subNodes[$subPath]['fullPath'] = $fullPath;
+				$subNodes[$subPath]['displayPath'] = $displayPath;
 			}
-			list(, $name) = DAV\URLUtil::splitPath($file['href']);
-			$type = null;
+			uasort($subNodes, [$this, 'compareNodes']);
 
-			if (isset($file[200]['{DAV:}resourcetype'])) {
-				$type = $file[200]['{DAV:}resourcetype']->getValue();
+			foreach ($subNodes as $subProps)
+			{
+				$size = (isset($subProps['{DAV:}getcontentlength']))
+					? $subProps['{DAV:}getcontentlength']
+					: '';
 
-				// resourcetype can have multiple values
-				if (!is_array($type)) $type = array($type);
+				$lastmodified = (isset($subProps['{DAV:}getlastmodified']))
+					? $subProps['{DAV:}getlastmodified']->getTime()->format('F j, Y, H:i:s')
+					: '';
 
-				foreach ($type as $k => $v) {
-					// Some name mapping is preferred
-					if ($v === '{DAV:}collection') {
-						$type = 'Directory';
-						break;
-					}
+				$fullPath = $this->escapeHTML($subProps['fullPath']);
+
+				if (isset($subProps['{DAV:}resourcetype']) && in_array('{DAV:}collection', $subProps['{DAV:}resourcetype']->getValue())) {
+					$trclass = 'class="dir"';
+					$icon = 'dir.png';
+					$type = 'Directory';
 				}
-			}
-
-			// If no resourcetype was found, we attempt to use
-			// the contenttype property
-			if (!$type && isset($file[200]['{DAV:}getcontenttype'])) {
-				$type = $file[200]['{DAV:}getcontenttype'];
-			}
-			if (!$type) $type = 'Unknown';
-
-			$size = isset($file[200]['{DAV:}getcontentlength'])?(int)$file[200]['{DAV:}getcontentlength']:'';
-			$lastmodified = isset($file[200]['{DAV:}getlastmodified'])?$file[200]['{DAV:}getlastmodified']->getTime()->format(\DateTime::RFC2822):'';
-
-			$fullPath = DAV\URLUtil::encodePath('/' . trim($this->server->getBaseUri() . ($path?$path . '/':'') . $name,'/'));
-
-			$displayName = isset($file[200]['{DAV:}displayname'])?$file[200]['{DAV:}displayname']:$name;
-
-			$displayName = $this->escapeHTML($displayName);
-			$type = $this->escapeHTML($type);
-
-			$icon = '';
-
-			$node = $this->server->tree->getNodeForPath(($path?$path.'/':'') . $name);
-			foreach (array_reverse($this->iconMap) as $class => $iconName) {
-				if ($node instanceof $class) {
-					$icon = "<a href=\"$fullPath\"><img src=\"{$this->server->getBaseUri()}".(($iconName == 'icons/collection') ? 'dir.png' : 'file.png') . '" alt=""/></a>';
-					break;
+				else {
+					$trclass = 'class="file"';
+					$icon = 'file.png';
+					$type = (isset($subProps['{DAV:}getcontenttype']))
+						? $subProps['{DAV:}getcontenttype']
+						: 'Unknown';
 				}
+				$html .= "        <tr $trclass>\n";
+				$html .= "          <td><a href=\"$fullPath\"><img src=\"{$this->server->getBaseUri()}$icon\" alt=\"\"/></a></td>\n";
+				$html .= "          <td><a href=\"$fullPath\">{$subProps['displayPath']}</a></td>\n";
+				$html .= "          <td>$type</td>\n";
+				$html .= "          <td>$size</td>\n";
+				$html .= "          <td>$lastmodified</td>\n";
+				$html .= "        </tr>\n";
 			}
-			$trclass = ($type == 'Directory') ? 'class="dir"' : 'class="file"';
-
-			$html .=
-<<<HTML
-        <tr $trclass>
-          <td>$icon</td>
-          <td><a href="{$fullPath}">{$displayName}</a></td>
-          <td>{$type}</td>
-          <td>{$size}</td>
-          <td>{$lastmodified}</td>
-        </tr>
-
-HTML;
 		}
 		$html .= <<<HTML
       </tbody>
     </table>
-    <img src="{$this->server->getBaseUri()}logo-sambadav.png" style="float:right;margin:5px"/><address>Generated by SabreDAV $version</address>
+    <img src="{$this->server->getBaseUri()}logo-sambadav.png" id="sambadav-logo"/><address>Generated by SabreDAV $version</address>
   </body>
 </html>
 HTML;
+
+		$this->server->httpResponse->setHeader('Content-Security-Policy', "img-src 'self'; style-src 'self';");
+
 		return $html;
 	}
 
@@ -230,29 +204,4 @@ HTML;
 
 	}
 
-	private function
-	compare_filenames ($a, $b)
-	{
-		// Helper function for uasort; sort file list: directories
-		// before files, else alphabetically:
-		$isdir_a = $isdir_b = false;
-
-		if (isset($a[200]['{DAV:}resourcetype'])) {
-			$isdir_a = $a[200]['{DAV:}resourcetype']->getValue();
-			$isdir_a = (isset($isdir_a[0]) && $isdir_a[0] == '{DAV:}collection');
-		}
-		if (isset($b[200]['{DAV:}resourcetype'])) {
-			$isdir_b = $b[200]['{DAV:}resourcetype']->getValue();
-			$isdir_b = (isset($isdir_b[0]) && $isdir_b[0] == '{DAV:}collection');
-		}
-		// Unequal types? Directories always win:
-		if ($isdir_a && !$isdir_b) return -1;
-		if ($isdir_b && !$isdir_a) return 1;
-
-		// Equal types? Sort alphabetically:
-		if (!isset($a['href']) || !isset($b['href']) || $a['href'] == $b['href']) {
-			return 0;
-		}
-		return strcasecmp($a['href'], $b['href']);
-	}
 }

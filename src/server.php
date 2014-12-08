@@ -32,8 +32,9 @@ $config->load(__DIR__ . '/config');
 
 // if this variable is not unambiguously true, bail out immediately:
 if ($config->enabled !== true) {
-	header('HTTP/1.1 404 Not Found');
-	die();
+	$response = new HTTP\Response(404);
+	HTTP\Sapi::sendResponse($response);
+	return;
 }
 
 // The base URI is the SambaDAV root dir location on the server.
@@ -81,7 +82,7 @@ $lockPlugin = new DAV\Locks\Plugin($lockBackend);
 $server->addPlugin($lockPlugin);
 
 // Browser plugin, for plain directory listings:
-$plugin = new BrowserPlugin($config->anonymous_only);
+$plugin = new BrowserPlugin($config);
 $server->addPlugin($plugin);
 
 // Content-type plugin:

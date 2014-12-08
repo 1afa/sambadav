@@ -23,17 +23,8 @@ use Sabre\DAV;
 
 class Directory extends DAV\FSExt\Directory
 {
-	public $uri = null;		// server that the share is on
-	private $entries = false;
-	private $flags;			// SMB flags
-	private $mtime;
-	private $parent = null;
+	private $entries = null;
 	private $userhome = null;
-	private $auth;
-	private $config;
-	private $cache;
-	private $log;
-	private $smb;
 
 	public function
 	__construct ($auth, $config, $cache, $log, $smb, URI $uri, $parent, $smbflags, $mtime)
@@ -73,14 +64,16 @@ class Directory extends DAV\FSExt\Directory
 			return $children;
 		}
 		// Else, open share, produce listing:
-		if ($this->entries === false) {
+		if (is_null($this->entries)) {
 			$this->get_entries();
 		}
-		foreach ($this->entries as $entry) {
-			if ($entry['name'] === '..' || $entry['name'] === '.') {
-				continue;
+		if (is_array($this->entries)) {
+			foreach ($this->entries as $entry) {
+				if ($entry['name'] === '..' || $entry['name'] === '.') {
+					continue;
+				}
+				$children[] = $this->getChild($entry['name']);
 			}
-			$children[] = $this->getChild($entry['name']);
 		}
 		return $children;
 	}
@@ -111,10 +104,10 @@ class Directory extends DAV\FSExt\Directory
 			return false;
 		}
 		// We have a server and a share, get entries:
-		if ($this->entries === false) {
+		if (is_null($this->entries)) {
 			$this->get_entries();
 		}
-		if ($this->entries !== false) {
+		if (is_array($this->entries)) {
 			foreach ($this->entries as $entry) {
 				if ($entry['name'] !== $name) {
 					continue;
@@ -199,12 +192,14 @@ class Directory extends DAV\FSExt\Directory
 		if ($this->uri->isServerRoot()) {
 			return (in_array($name, $this->server_root_entries()));
 		}
-		if ($this->entries === false) {
+		if (is_null($this->entries)) {
 			$this->get_entries();
 		}
-		foreach ($this->entries as $entry) {
-			if ($name === $entry['name']) {
-				return true;
+		if (is_array($this->entries)) {
+			foreach ($this->entries as $entry) {
+				if ($name === $entry['name']) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -349,7 +344,7 @@ class Directory extends DAV\FSExt\Directory
 	cache_destroy ()
 	{
 		$this->cache->remove(array($this->smb, 'ls'), $this->auth, $this->uri);
-		$this->entries = false;
+		$this->entries = null;
 	}
 
 	public function
