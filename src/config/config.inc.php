@@ -94,9 +94,9 @@ return array(
 	//
 	// The %w, %u and %d placeholders can be used in pattern strings.
 	// The username is always available by definition, unless anonymous
-	// login is allowed. The other two placeholders can be undefined if the 
-	// user didn't enter them. If you specify a pattern that can't be 
-	// filled from the user's input, the application will abort the 
+	// login is allowed. The other two placeholders can be undefined if the
+	// user didn't enter them. If you specify a pattern that can't be
+	// filled from the user's input, the application will abort the
 	// request.
 
 	// Pattern for the userhomes. If defined, this will override 'share_userhomes'.
