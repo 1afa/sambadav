@@ -698,6 +698,12 @@ statements.) Include a mention of what you think the output should be.
 
 ## Upgrading
 
+### From 0.4 to 0.5
+
+If you want to migrate an older config, you probably need to add the new
+`ldap_username_pattern` and `samba_username_pattern` config options. The
+backwards-compatible value for these is `%u` (use the stripped username).
+
 ### From 0.3 to 0.4
 
 The config system changed between 0.3 and 0.4. In 0.3, configuration was done

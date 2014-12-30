@@ -1,3 +1,4 @@
+* Tue Dec 30 2014 Alfred Klomp <alfred@1afa.com> v0.5.0
 - Auth: add logger object, log various debug messages;
 - Require SabreDAV 2.1;
 - Browser plugin: hide logout link if anonymous_only is active;
