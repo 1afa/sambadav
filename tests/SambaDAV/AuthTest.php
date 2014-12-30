@@ -31,7 +31,9 @@ class AuthTest extends \PHPUnit_Framework_TestCase
 	public function
 	testFillPattern ($user, $pattern, $expect)
 	{
-		$auth = new Auth(null);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$auth = new Auth(null, $log);
 		$auth->user = $user;
 		$this->assertEquals($expect, $auth->fillPattern($pattern));
 	}
@@ -43,7 +45,9 @@ class AuthTest extends \PHPUnit_Framework_TestCase
 		$config->samba_username_pattern = '%u';
 		$config->samba_domain_pattern = null;
 
-		$auth = new Auth($config);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$auth = new Auth($config, $log);
 		$auth->user = 'joe';
 
 		$auth->checkSambaPatterns();

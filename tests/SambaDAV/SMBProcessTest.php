@@ -8,7 +8,8 @@ class SMBProcessTest extends \PHPUnit_Framework_TestCase
 	testWriteAuth ()
 	{
 		$config = new Config();
-		$auth = new Auth($config);
+		$log = new Log\Filesystem(Log::NONE);
+		$auth = new Auth($config, $log);
 		$auth->user = 'john';
 		$auth->pass = 'pass';
 		$auth->checkAuth();
@@ -37,7 +38,9 @@ class SMBProcessTest extends \PHPUnit_Framework_TestCase
 		$config = new Config();
 		$config->samba_username_pattern = 'testing-%u';
 
-		$auth = new Auth($config);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$auth = new Auth($config, $log);
 		$auth->user = 'john@domain';
 		$auth->pass = 'pass';
 		$auth->checkAuth();
@@ -66,7 +69,9 @@ class SMBProcessTest extends \PHPUnit_Framework_TestCase
 		$config = new Config();
 		$config->samba_domain_pattern = '%d';
 
-		$auth = new Auth($config);
+		$log = new Log\Filesystem(Log::NONE);
+
+		$auth = new Auth($config, $log);
 		$auth->user = 'john@moon';
 		$auth->pass = 'pass';
 		$auth->checkAuth();

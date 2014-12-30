@@ -44,7 +44,7 @@ $baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $c
 // Create central Log object:
 $log = new Log\Filesystem();
 
-$auth = new Auth($config, $baseuri);
+$auth = new Auth($config, $log, $baseuri);
 
 // Run the authentication routines:
 if ($auth->exec() === false) {

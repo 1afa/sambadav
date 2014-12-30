@@ -27,16 +27,15 @@ class Auth
 	public $pass = null;
 	public $anonymous = false;
 
-	private $baseuri;
-	private $config;
 	private $userhome = null;	// An URI instance
 	private $samba_username = null;
 	private $samba_domain = null;
 
 	public function
-	__construct ($config, $baseuri = '/')
+	__construct ($config, $log, $baseuri = '/')
 	{
 		$this->config = $config;
+		$this->log = $log;
 		$this->baseuri = $baseuri;
 	}
 
@@ -46,6 +45,7 @@ class Auth
 		// If ANONYMOUS_ONLY is set to true in the config, don't require credentials;
 		// also the 'logout' action makes no sense for an anonymous server:
 		if ($this->config->anonymous_only) {
+			$this->log->info("anonymous login accepted\n");
 			$this->anonymous = true;
 			return true;
 		}
@@ -93,6 +93,8 @@ class Auth
 			$this->showLoginForm($auth, $response);
 			return false;
 		}
+		$this->log->info("login accepted for '%s'\n", (is_null($this->user) ? '(none)' : $this->user));
+
 		return true;
 	}
 
@@ -102,9 +104,11 @@ class Auth
 		// If we did not get all creds, check whether that's okay or not:
 		if ($this->user === null || $this->pass === null) {
 			if ($this->config->anonymous_allow) {
+				$this->log->debug("allowing anonymous login\n");
 				$this->anonymous = true;
 				return true;
 			}
+			$this->log->info("anonymous login denied by config\n");
 			return false;
 		}
 		// Check if the Samba patterns can be filled:
@@ -138,6 +142,7 @@ class Auth
 		// Check LDAP for group membership:
 		// $ldap_groups is sourced from config/config.inc.php:
 		if ($this->config->ldap_auth !== true) {
+			$this->log->debug("skipping LDAP authentication\n");
 			return true;
 		}
 		// Should we do an AD-style bind or a fast bind?
@@ -148,13 +153,16 @@ class Auth
 		$ldap = new LDAP($method, $this->config->ldap_host, $this->config->ldap_basedn, $this->config->ldap_authdn, $this->config->ldap_authpass);
 
 		if (($username = $this->ldapUsername()) === false) {
+			$this->log->info("LDAP username not found\n");
 			return false;
 		}
 		if ($ldap->verify($username, $this->pass, $this->config->ldap_groups, $this->config->share_userhome_ldap) === false) {
+			$this->log->info("failed to verify credentials in LDAP with username '%s'\n", $username);
 			return false;
 		}
 		if ($ldap->userhome !== null) {
 			$this->userhome = new URI($ldap->userhome);
+			$this->log->debug("LDAP userhome found: '%s'\n", $this->userhome);
 		}
 		return true;
 	}
@@ -168,12 +176,14 @@ class Auth
 		// Check if the Samba username pattern, if given, can be satisfied:
 		if (is_string($this->config->samba_username_pattern)) {
 			if (($filled = $this->fillPattern($this->config->samba_username_pattern)) === false) {
+				$this->log->info("failed to fill Samba username pattern\n");
 				return false;
 			}
 			$this->samba_username = $filled;
 		}
 		if (is_string($this->config->samba_domain_pattern)) {
 			if (($filled = $this->fillPattern($this->config->samba_domain_pattern)) === false) {
+				$this->log->info("failed to fill Samba domain pattern\n");
 				return false;
 			}
 			$this->samba_domain = $filled;
@@ -260,6 +270,7 @@ class Auth
 				continue;
 			}
 			if ($str === '') {
+				$this->log->debug("pattern '%s' could not be filled\n", $repl);
 				return false;
 			}
 		}
