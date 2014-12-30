@@ -5,90 +5,119 @@ namespace SambaDAV;
 class URITest extends \PHPUnit_Framework_TestCase
 {
 	public function
-	testUriFull_A ()
+	uriFullProvider ()
 	{
-		$uri = new URI('server', 'share', '/path/to/file');
-		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
+		return
+		[ [ [ 'server', 'share', '/path/to/file' ]
+		  , '//server/share/path/to/file'
+		  ]
+		, [ [ 'server', 'share' ]
+		  , '//server/share'
+		  ]
+		, [ [ 'server', 'share', 'path' ]
+		  , '//server/share/path'
+		  ]
+		, [ [ 'server', 'share', '//path////to///file////' ]
+		  , '//server/share/path/to/file'
+		  ]
+		, [ [ null, 'server', null, 'share', null, '//path////to///file////' ]
+		  , '//server/share/path/to/file'
+		  ]
+		, [ [ ]
+		  , '//'
+		  ]
+		, [ [ '' ]
+		  , '//'
+		  ]
+		] ;
+	}
+
+	/**
+	 * @dataProvider uriFullProvider
+	 */
+	public function
+	testUriFull ($parts, $expect)
+	{
+		$uri = new URI($parts);
+		$this->assertEquals($expect, $uri->uriFull());
+
+		// Add parts one by one; should give same result:
+		$uri = new URI();
+		foreach ($parts as $part) {
+			$uri->addParts($part);
+		}
+		$this->assertEquals($expect, $uri->uriFull());
 	}
 
 	public function
-	testUriFull_B ()
+	uriServerShareProvider ()
 	{
-		$uri = new URI('server', 'share');
-		$this->assertEquals('//server/share', $uri->uriFull());
+		return
+		[ [ [ 'server', 'share', '/path/to/file' ]
+		  , '//server/share'
+		  ]
+		, [ [ 'server', 'share', null ]
+		  , '//server/share'
+		  ]
+		, [ [ 'server', null ]
+		  , '//server'
+		  ]
+		] ;
+	}
+
+	/**
+	 * @dataProvider uriServerShareProvider
+	 */
+	public function
+	testUriServerShare ($parts, $expect)
+	{
+		$uri = new URI($parts);
+		$this->assertEquals($expect, $uri->uriServerShare());
+
+		// Add parts one by one; should give same result:
+		$uri = new URI();
+		foreach ($parts as $part) {
+			$uri->addParts($part);
+		}
+		$this->assertEquals($expect, $uri->uriServerShare());
 	}
 
 	public function
-	testUriFull_C ()
+	addPartsProvider ()
 	{
-		$uri = new URI('server', 'share', 'path');
-		$this->assertEquals('//server/share/path', $uri->uriFull());
+		return
+		[ [ [ 'server', 'share', '/path/to' ]
+		  , [ 'file' ]
+		  , '//server/share/path/to/file'
+		  ]
+		, [ [ 'server', 'share' ]
+		  , [ 'path' ]
+		  , '//server/share/path'
+		  ]
+		, [ [ 'server', 'share', 'path///' ]
+		  , [ 'to', 'file' ]
+		  , '//server/share/path/to/file'
+		  ]
+		, [ [ '\\\\server\\share\\path' ]
+		  , [ '\\to\\\\', 'file\\' ]
+		  , '//server/share/path/to/file'
+		  ]
+		] ;
+	}
+
+	/**
+	 * @dataProvider addPartsProvider
+	 */
+	public function
+	testAddParts ($parts, $adds, $expect)
+	{
+		$uri = new URI($parts);
+		$uri->addParts($adds);
+		$this->assertEquals($expect, $uri->uriFull());
 	}
 
 	public function
-	testUriFull_D ()
-	{
-		$uri = new URI('server', 'share', '//path////to///file////');
-		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
-	}
-
-	public function
-	testUriServerShare_A ()
-	{
-		$uri = new URI('server', 'share', '/path/to/file');
-		$this->assertEquals('//server/share', $uri->uriServerShare());
-	}
-
-	public function
-	testUriServerShare_B ()
-	{
-		$uri = new URI('server', 'share', null);
-		$this->assertEquals('//server/share', $uri->uriServerShare());
-	}
-
-	public function
-	testUriServerShare_C ()
-	{
-		$uri = new URI('server', null);
-		$this->assertEquals('//server', $uri->uriServerShare());
-	}
-
-	public function
-	testAddParts_A ()
-	{
-		$uri = new URI('server', 'share', '/path/to');
-		$uri->addParts('file');
-		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
-	}
-
-	public function
-	testAddParts_B ()
-	{
-		$uri = new URI('server', 'share');
-		$uri->addParts('path');
-		$this->assertEquals('//server/share/path', $uri->uriFull());
-	}
-
-	public function
-	testAddParts_C ()
-	{
-		$uri = new URI('server', 'share', 'path///');
-		$uri->addParts('to');
-		$uri->addParts('file');
-		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
-	}
-
-	public function
-	testAddParts_D ()
-	{
-		$uri = new URI('\\\\server\\share\\path');
-		$uri->addParts('\\to\\\\');
-		$uri->addParts('file\\');
-		$this->assertEquals('//server/share/path/to/file', $uri->uriFull());
-	}
-
-	public function
-	testRename_A ()
+	testRename ()
 	{
 		$uri = new URI('server', 'share', '/path/to/file');
 		$uri->rename('foo');
@@ -96,35 +125,36 @@ class URITest extends \PHPUnit_Framework_TestCase
 	}
 
 	public function
-	testName_A ()
+	nameProvider ()
 	{
-		$uri = new URI('server', 'share', '/path/to/file');
-		$this->assertEquals('file', $uri->name());
+		return
+		[ [ [ 'server', 'share', '/path/to/file' ]
+		  , 'file'
+		  ]
+		, [ [ 'server', 'share', 'path/' ]
+		  , 'path'
+		  ]
+		, [ [ 'server', 'share' ]
+		  , 'share'
+		  ]
+		, [ [ 'server' ]
+		  , 'server'
+		  ]
+		] ;
+	}
+
+	/**
+	 * @dataProvider nameProvider
+	 */
+	public function
+	testName ($parts, $expect)
+	{
+		$uri = new URI($parts);
+		$this->assertEquals($expect, $uri->name());
 	}
 
 	public function
-	testName_B ()
-	{
-		$uri = new URI('server', 'share', 'path/');
-		$this->assertEquals('path', $uri->name());
-	}
-
-	public function
-	testName_C ()
-	{
-		$uri = new URI('server', 'share');
-		$this->assertEquals('share', $uri->name());
-	}
-
-	public function
-	testName_D ()
-	{
-		$uri = new URI('server');
-		$this->assertEquals('server', $uri->name());
-	}
-
-	public function
-	testName_E ()
+	testNameRename ()
 	{
 		$uri = new URI('server', 'share', '/path/to/file/name');
 		$uri->rename('foo');
@@ -132,23 +162,28 @@ class URITest extends \PHPUnit_Framework_TestCase
 	}
 
 	public function
-	testParentDir_A ()
+	parentDirProvider ()
 	{
-		$uri = new URI('server', 'share', '/path/to/file/name');
-		$this->assertEquals('/path/to/file', $uri->parentDir());
+		return
+		[ [ [ 'server', 'share', '/path/to/file/name' ]
+		  , '/path/to/file'
+		  ]
+		, [ [ 'server', 'share', '/path' ]
+		  , '/'
+		  ]
+		, [ [ 'server', 'share', '/path/to' ]
+		  , '/path'
+		  ]
+		] ;
 	}
 
+	/**
+	 * @dataProvider parentDirProvider
+	 */
 	public function
-	testParentDir_B ()
+	testParentDir ($parts, $expect)
 	{
-		$uri = new URI('server', 'share', '/path');
-		$this->assertEquals('/', $uri->parentDir());
-	}
-
-	public function
-	testParentDir_C ()
-	{
-		$uri = new URI('server', 'share', '/path/to');
-		$this->assertEquals('/path', $uri->parentDir());
+		$uri = new URI($parts);
+		$this->assertEquals($expect, $uri->parentDir());
 	}
 }

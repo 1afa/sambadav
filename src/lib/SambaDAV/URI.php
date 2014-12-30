@@ -30,9 +30,6 @@ class URI
 	{
 		// Allow a variable number of string arguments:
 		foreach (func_get_args() as $arg) {
-			if (!is_string($arg)) {
-				continue;
-			}
 			$this->addParts($arg);
 		}
 	}
@@ -124,7 +121,7 @@ class URI
 	}
 
 	public function
-	addParts ($parts)
+	addString ($parts)
 	{
 		if (!is_string($parts)) {
 			return;
@@ -137,6 +134,20 @@ class URI
 		foreach (explode('/', $parts) as $part) {
 			if ($part !== '') {
 				$this->parts[] = $part;
+			}
+		}
+	}
+
+	public function
+	addParts ($parts)
+	{
+		if (is_string($parts)) {
+			$this->addString($parts);
+			return;
+		}
+		if (is_array($parts)) {
+			foreach ($parts as $part) {
+				$this->addString($part);
 			}
 		}
 	}
