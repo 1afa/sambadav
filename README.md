@@ -424,6 +424,10 @@ unspecified to use the default values.
   for logging in to `smbclient`. They default to the username and `null`,
   respectively.
 
+- `log_level`: set the log verbosity. Defaults to 'warn' when omitted. Can be
+  set to the values 'none', 'error', 'warn', 'info', 'debug' or 'trace' in
+  order of verboseness from least to most.
+
 The other two config files are:
 
 - `share_root.inc.php`: defines server/share pairs that show up in the server

@@ -114,4 +114,8 @@ return array(
 	// Pattern to create the domain with that's passed to Samba for authentication:
 	'samba_domain_pattern' => null,
 
+	// Log level: can be 'none', 'error', 'warn', 'info', 'debug' or 'trace',
+	// in order of verboseness from least to most:
+	'log_level' => 'warn',
+
 );

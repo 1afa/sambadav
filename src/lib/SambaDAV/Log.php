@@ -37,7 +37,7 @@ abstract class Log
 		, self::TRACE => 'trace'
 		] ;
 
-	protected $level;
+	public $level;
 
 	// Commit $data to log. Returns true/false.
 	abstract protected function commit ($level, $message);
@@ -70,6 +70,17 @@ abstract class Log
 	trace ()
 	{
 		$this->log(self::TRACE, func_get_args());
+	}
+
+	public function
+	setLevel ($string)
+	{
+		// Try to find string in lnames array:
+		if (($level = array_search($string, $this->lnames)) === false) {
+			return false;
+		}
+		$this->level = $level;
+		return true;
 	}
 
 	private function

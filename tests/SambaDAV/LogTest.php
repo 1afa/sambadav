@@ -37,4 +37,33 @@ class LogTest extends \PHPUnit_Framework_TestCase
 
 		$log->debug('Hello world');
 	}
+
+	public function
+	setLevelProvider ()
+	{
+		return
+		[ [ null,    Log::WARN  ]	// Default
+		, [ false,   Log::WARN  ] 	// Default
+		, [ 'xxxxx', Log::WARN  ] 	// Default
+		, [ 'none',  Log::NONE  ]
+		, [ 'error', Log::ERROR ]
+		, [ 'warn',  Log::WARN  ]
+		, [ 'info',  Log::INFO  ]
+		, [ 'debug', Log::DEBUG ]
+		, [ 'trace', Log::TRACE ]
+		, [ 'none',  Log::NONE  ]
+		] ;
+	}
+
+	/**
+	 * @dataProvider setLevelProvider
+	 */
+	public function
+	testSetLevel ($value, $expect)
+	{
+		// Create log with default value:
+		$log = new Log\Filesystem(Log::WARN);
+		$log->setLevel($value);
+		$this->assertEquals($expect, $log->level);
+	}
 }

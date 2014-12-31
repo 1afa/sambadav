@@ -43,6 +43,7 @@ $baseuri = (strpos($_SERVER['REQUEST_URI'], $config->server_basedir) === 0) ? $c
 
 // Create central Log object:
 $log = new Log\Filesystem();
+$log->setLevel($config->log_level);
 
 $auth = new Auth($config, $log, $baseuri);
 
