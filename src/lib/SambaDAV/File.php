@@ -49,7 +49,7 @@ class File extends DAV\FSExt\File
 	public function
 	setName ($name)
 	{
-		$this->log->trace("File::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("%s: '%s' -> '%s'\n", __METHOD__, $this->uri->uriFull(), $name);
 		switch ($this->smb->rename($this->uri, $name)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
@@ -70,7 +70,7 @@ class File extends DAV\FSExt\File
 		// the proc object stays alive after we leave this function.
 		// So we use a global class variable to store it.
 		// It's not pretty, but it makes real streaming possible.
-		$this->log->trace("File::get '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		$this->proc = new \SambaDAV\SMBClient\Process($this->auth, $this->config, $this->log);
 
@@ -86,7 +86,7 @@ class File extends DAV\FSExt\File
 	public function
 	put ($data)
 	{
-		$this->log->trace("File::put '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 		switch ($this->smb->put($this->uri, $data, $md5)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();
@@ -112,7 +112,7 @@ class File extends DAV\FSExt\File
 	public function
 	getETag ()
 	{
-		$this->log->trace("File::getETag '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		if ($this->etag !== null) {
 			return $this->etag;
@@ -177,7 +177,7 @@ class File extends DAV\FSExt\File
 	public function
 	updateProperties ($mutations)
 	{
-		$this->log->trace("File::updateProperties '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		$new_flags = clone $this->flags;
 		$invalidate = false;
@@ -225,7 +225,7 @@ class File extends DAV\FSExt\File
 	public function
 	delete ()
 	{
-		$this->log->trace("File::delete '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 		switch ($this->smb->rm($this->uri)) {
 			case SMB::STATUS_OK:
 				$this->invalidate_parent();

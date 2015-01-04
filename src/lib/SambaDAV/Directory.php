@@ -43,7 +43,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	getChildren ()
 	{
-		$this->log->trace("Directory::getChildren '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		$children = array();
 
@@ -81,7 +81,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	getChild ($name)
 	{
-		$this->log->trace("Directory::getChild '%s' '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("%s: '%s' '%s'\n", __METHOD__, $this->uri->uriFull(), $name);
 
 		// Are we a folder in the root dir?
 		if ($this->uri->isGlobalRoot()) {
@@ -130,7 +130,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	createDirectory ($name)
 	{
-		$this->log->trace("Directory::createDirectory '%s' '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("%s: '%s' '%s'\n", __METHOD__, $this->uri->uriFull(), $name);
 
 		// Cannot create directories in the root:
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
@@ -155,7 +155,7 @@ class Directory extends DAV\FSExt\Directory
 		$uri = clone $this->uri;
 		$uri->addParts($name);
 
-		$this->log->trace("Directory::createFile '%s'\n", $uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 
 		if ($this->uri->isGlobalRoot()) {
 			$this->exc_forbidden('Cannot create files in global root');
@@ -214,7 +214,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	setName ($name)
 	{
-		$this->log->trace("Directory::setName '%s' -> '%s'\n", $this->uri->uriFull(), $name);
+		$this->log->trace("%s: '%s' -> '%s'\n", __METHOD__, $this->uri->uriFull(), $name);
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot rename root folders');
@@ -260,7 +260,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	getQuotaInfo ()
 	{
-		$this->log->trace("Directory::getQuotaInfo '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		// NB: Windows 7 uses/needs this method. Must return array.
 		// We refuse to do the actual lookup, because:
@@ -298,7 +298,7 @@ class Directory extends DAV\FSExt\Directory
 	public function
 	delete ()
 	{
-		$this->log->trace("Directory::delete '%s'\n", $this->uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $this->uri->uriFull());
 
 		if ($this->uri->isGlobalRoot() || $this->uri->isServerRoot()) {
 			$this->exc_forbidden('cannot delete root folders');

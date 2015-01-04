@@ -38,6 +38,8 @@ class Process
 	public function
 	open ($args, $smbcmd)
 	{
+		$this->log->trace("%s: '%s', '%s'\n", __METHOD__, $args, $smbcmd);
+
 		// $args is assumed to have been shell-escaped by caller;
 		// append any extra smbclient options if specified:
 		if (isset($this->config->smbclient_extra_opts) && is_string($this->config->smbclient_extra_opts)) {
@@ -63,6 +65,8 @@ class Process
 		$cmd = ($this->auth->anonymous)
 			? sprintf('%s --debuglevel=0 --no-pass %s', $this->config->smbclient_path, $args)
 			: sprintf('%s --debuglevel=0 --authentication-file=/proc/self/fd/3 %s', $this->config->smbclient_path, $args);
+
+		$this->log->info("proc_open(%s, ...)\n", $cmd);
 
 		if (!($this->proc = proc_open($cmd, $pipes, $this->fd, '/', $env))) {
 			$this->log->error("proc_open failed: %s\n", $cmd);
@@ -125,6 +129,8 @@ class Process
 	public function
 	writeAuthFile ()
 	{
+		$this->log->trace("%s\n", __METHOD__);
+
 		if ($this->auth->anonymous === false)
 		{
 			$creds = array();
@@ -151,6 +157,8 @@ class Process
 	public function
 	writeCommand ($smbcmd)
 	{
+		$this->log->trace("%s\n", __METHOD__);
+
 		if ($smbcmd !== false) {
 			if (fwrite($this->getStdinHandle(), $smbcmd) === false) {
 				$this->log->error("fwrite to stdin failed\n");

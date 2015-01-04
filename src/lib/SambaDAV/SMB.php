@@ -42,6 +42,7 @@ class SMB
 	public function
 	getShares ($uri, $proc = null)
 	{
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 		$args = sprintf('--grepable --list %s', escapeshellarg($uri->uriServer()));
 
 		if (is_null($proc)) {
@@ -57,7 +58,7 @@ class SMB
 	public function
 	ls ($uri, $proc = null)
 	{
-		$this->log->trace("SMB::ls '%s'\n", $uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 
 		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
@@ -79,7 +80,7 @@ class SMB
 	public function
 	du ($uri, $proc = null)
 	{
-		$this->log->trace("SMB::du '%s'\n", $uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 
 		$args = escapeshellarg($uri->uriServerShare());
 		$scmd = $this->makeCmd($uri->path(), 'du');
@@ -97,7 +98,7 @@ class SMB
 	public function
 	get ($uri, $proc)
 	{
-		$this->log->trace("SMB::get '%s'\n", $uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 
 		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
@@ -120,7 +121,7 @@ class SMB
 	public function
 	put ($uri, $data, &$md5, $proc = null)
 	{
-		$this->log->trace("SMB::put '%s'\n", $uri->uriFull());
+		$this->log->trace("%s: '%s'\n", __METHOD__, $uri->uriFull());
 
 		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
@@ -169,7 +170,7 @@ class SMB
 		// A helper function that sends a simple (silent)
 		// command to smbclient and reports the result status.
 
-		$this->log->trace("SMB::cmdSimple: '%s' '%s'\n", $cmd, $path);
+		$this->log->trace("%s: '%s' '%s'\n", __METHOD__, $cmd, $path);
 
 		if ($uri->isWinSafe() === false) {
 			return self::STATUS_INVALID_NAME;
