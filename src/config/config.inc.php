@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Project page: <https://github.com/bokxing-it/sambadav/>
+# Project page: <https://github.com/1afa/sambadav/>
 
 return array(
 

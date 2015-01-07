@@ -1,3 +1,4 @@
+- Move repo from owner `bokxing-it` to `1afa` for organizational reasons;
 - Log: make log level configurable in config file
 
 * Tue Dec 30 2014 Alfred Klomp <alfred@1afa.com> v0.5.0

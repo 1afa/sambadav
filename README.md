@@ -1,4 +1,4 @@
-![SambaDAV](https://raw.github.com/bokxing-it/sambadav/master/img/png/logo.png)
+![SambaDAV](https://raw.github.com/1afa/sambadav/master/img/png/logo.png)
 
 # SambaDAV
 
@@ -19,7 +19,7 @@ anywhere), while leaving control over your data and your security entirely with
 you. You can host your Windows network shares as your own "private cloud" over
 standard and secure HTTPS.
 
-Release tarballs can be downloaded [here](https://github.com/bokxing-it/sambadav/releases).
+Release tarballs can be downloaded [here](https://github.com/1afa/sambadav/releases).
 
 After installing and configuring SambaDAV, a WebDAV-aware service listens for
 requests at an entrypoint URL such as `https://www.example.com/webfolders`. If
@@ -36,7 +36,7 @@ that you can edit, copy, move, delete and rename files and directories just
 like they were on a local network share. All this over simple HTTPS and without
 setting up a VPN.
 
-[![Build Status](https://travis-ci.org/bokxing-it/sambadav.svg)](https://travis-ci.org/bokxing-it/sambadav)
+[![Build Status](https://travis-ci.org/1afa/sambadav.svg)](https://travis-ci.org/1afa/sambadav)
 
 ## How does it work?
 
@@ -116,7 +116,7 @@ wrote SambaDAV because those projects show their age and did not fit our needs.
 
 SambaDAV is licensed under the terms of the GNU Affero GPL version 3. Please
 refer to the
-[LICENSE](https://github.com/bokxing-it/sambadav/blob/master/LICENSE) file in
+[LICENSE](https://github.com/1afa/sambadav/blob/master/LICENSE) file in
 the project root. Please contact the authors if you have any licensing
 questions or requests.
 
@@ -135,7 +135,7 @@ smbclient -N -L //yourserver
 ```
 
 Download a SambaDAV release tarball
-[here](https://github.com/bokxing-it/sambadav/releases). Unpack it in some
+[here](https://github.com/1afa/sambadav/releases). Unpack it in some
 directory, we'll assume `/tmp` for convenience:
 
 ```sh
@@ -638,7 +638,7 @@ an exclamation mark to appear at the start of a line.
 
 We make no guarantees about the security or fitness for purpose of this
 software. See the
-[LICENSE](https://github.com/bokxing-it/sambadav/blob/master/LICENSE) for
+[LICENSE](https://github.com/1afa/sambadav/blob/master/LICENSE) for
 specifics.
 
 

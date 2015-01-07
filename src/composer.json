@@ -1,5 +1,5 @@
 {
-	"name" : "bokxing-it/sambadav",
+	"name" : "1afa/sambadav",
 	"require" : {
 		"sabre/dav" : "~2.1.0"
 	},
