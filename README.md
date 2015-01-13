@@ -104,13 +104,14 @@ resilient and performant for what it is. Some features:
 ## History and provenance
 
 SambaDAV was written by [Bokxing IT BV](http://www.bokxing-it.nl), Delft, the
-Netherlands, to supplement a line of small business servers. We are releasing
-it because we believe that this software is useful and fills a need, and to
-give something back to the open-source community. There are other projects that
-offer something similar, such as
-[Davenport](http://davenport.sourceforge.net) and smbwebclient.php, but we
-wrote SambaDAV because those projects show their age and did not fit our needs.
-
+Netherlands, to supplement a line of SME servers. It was released because this
+software was found useful and fills a need, and to give something back to the
+open-source community. There are other projects that offer something similar,
+such as [Davenport](http://davenport.sourceforge.net) and smbwebclient.php, but
+SambaDAV was written because those projects show their age and did not fit our
+needs.
+At the start of 2015 the project was transferred to the company developing the
+aforementioned line of SME servers, [1A First Alternative](http://www.1a-first-alternative.com).
 
 ## License
 
