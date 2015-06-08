@@ -1,7 +1,7 @@
 {
 	"name" : "1afa/sambadav",
 	"require" : {
-		"sabre/dav" : "~2.1.0"
+		"sabre/dav" : "~3.0.0"
 	},
 	"license" : "agpl",
 	"authors" : [

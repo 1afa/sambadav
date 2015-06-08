@@ -119,7 +119,7 @@ $server->addPlugin($plugin);
 
 // Compatibility fix for Microsoft Word 2003,
 // Otherwise harmless, according to http://sabre.io/dav/clients/msoffice:
-\Sabre\DAV\Property\LockDiscovery::$hideLockRoot = true;
+\Sabre\DAV\Xml\Property\LockDiscovery::$hideLockRoot = true;
 
 // Custom plugin to add the nonstandard DAV:ishidden and DAV:isreadonly flags:
 $server->addPlugin(new MSPropertiesPlugin());
