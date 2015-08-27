@@ -33,6 +33,100 @@ class BrowserPlugin extends DAV\Browser\Plugin
 		$this->config = $config;
 	}
 
+    	/**
+    	 * Handles POST requests for tree operations.
+    	 *
+    	 * @param RequestInterface $request
+    	 * @param ResponseInterface $response
+    	 * @return bool
+    	 */
+    	function httpPOST(RequestInterface $request, ResponseInterface $response) {
+
+    	    $contentType = $request->getHeader('Content-Type');
+    	    list($contentType) = explode(';', $contentType);
+    	    if ($contentType !== 'application/x-www-form-urlencoded' &&
+    	        $contentType !== 'multipart/form-data') {
+    	            return;
+    	    }
+    	    $postVars = $request->getPostData();
+
+    	    if (!isset($postVars['sabreAction']))
+    	        return;
+
+    	    $uri = $request->getPath();
+
+    	    if ($this->server->emit('onBrowserPostAction', [$uri, $postVars['sabreAction'], $postVars])) {
+
+    	        switch ($postVars['sabreAction']) {
+
+    	            case 'mkcol' :
+    	                if (isset($postVars['name']) && trim($postVars['name'])) {
+    	                    // Using basename() because we won't allow slashes
+    	                    list(, $folderName) = URLUtil::splitPath(trim($postVars['name']));
+
+    	                    if (isset($postVars['resourceType'])) {
+    	                        $resourceType = explode(',', $postVars['resourceType']);
+    	                    } else {
+    	                        $resourceType = ['{DAV:}collection'];
+    	                    }
+
+    	                    $properties = [];
+    	                    foreach ($postVars as $varName => $varValue) {
+    	                        // Any _POST variable in clark notation is treated
+    	                        // like a property.
+    	                        if ($varName[0] === '{') {
+    	                            // PHP will convert any dots to underscores.
+    	                            // This leaves us with no way to differentiate
+    	                            // the two.
+    	                            // Therefore we replace the string *DOT* with a
+    	                            // real dot. * is not allowed in uris so we
+    	                            // should be good.
+    	                            $varName = str_replace('*DOT*', '.', $varName);
+    	                            $properties[$varName] = $varValue;
+    	                        }
+    	                    }
+
+    	                    $mkCol = new MkCol(
+    	                        $resourceType,
+    	                        $properties
+    	                    );
+    	                    $this->server->createCollection($uri . '/' . $folderName, $mkCol);
+    	                }
+    	                break;
+
+    	            // @codeCoverageIgnoreStart
+    	            case 'put' :
+
+    	                if ($_FILES) $file = current($_FILES);
+    	                else break;
+
+    	                list(, $newName) = URLUtil::splitPath(trim($file['name']));
+    	                if (isset($postVars['name']) && trim($postVars['name']))
+    	                    $newName = trim($postVars['name']);
+
+    	                // Making sure we only have a 'basename' component
+    	                list(, $newName) = URLUtil::splitPath($newName);
+
+    	                if (is_uploaded_file($file['tmp_name'])) {
+    	                    $this->server->createFile($uri . '/' . $newName, fopen($file['tmp_name'], 'r'));
+    	                }
+    	                break;
+    	            // @codeCoverageIgnoreEnd
+
+    	    	    case 'del':
+    	                if (isset($postVars['path'])) {
+    	    			$this->server->tree->delete(trim($postVars['path']));
+    	    	    	}
+    	    	    	break;
+    	        }
+
+    	    }
+    	    $response->setHeader('Location', $request->getUrl());
+    	    $response->setStatus(302);
+    	    return false;
+
+    	}
+
 	public function
 	generateDirectoryIndex ($path)
 	{
@@ -90,6 +184,7 @@ HTML;
           <th>Type</th>
           <th>Size</th>
           <th>Last modified</th>
+          <th>Delete</th>
         </tr>
       </thead>
       <tbody>
@@ -107,6 +202,7 @@ HTML;
           <td>[parent]</td>
           <td></td>
           <td></td>
+	  <td></td>
         </tr>
 
 HTML;
@@ -141,6 +237,7 @@ HTML;
 					? $subProps['{DAV:}getlastmodified']->getTime()->format('F j, Y, H:i:s')
 					: '';
 
+				$fullPath_decoded = URLUtil::decodePath($subProps['fullPath']);
 				$fullPath = $this->escapeHTML($subProps['fullPath']);
 
 				if (isset($subProps['{DAV:}resourcetype']) && in_array('{DAV:}collection', $subProps['{DAV:}resourcetype']->getValue())) {
@@ -161,6 +258,13 @@ HTML;
 				$html .= "          <td>$type</td>\n";
 				$html .= "          <td>$size</td>\n";
 				$html .= "          <td>$lastmodified</td>\n";
+				$html .= "          <td>\n";
+				$html .= "          <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm('Are you sure you want to delete " . $subProps['displayPath']. "');\">\n";
+				$html .= "          <input name=\"sabreAction\" value=\"del\" type=\"hidden\">\n";
+				$html .= "          <input name=\"path\" value=\"$fullPath_decoded\" type=\"hidden\">\n";
+				$html .= "          <input value=\"Delete\" type=\"submit\">\n";
+				$html .= "          </form>\n";
+				$html .= "          </td>\n";
 				$html .= "        </tr>\n";
 			}
 		}
