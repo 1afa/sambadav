@@ -26,6 +26,7 @@ use Sabre\DAV,
 
 class BrowserPlugin extends DAV\Browser\Plugin
 {
+	
 	public function
 	__construct ($config)
 	{
@@ -33,99 +34,56 @@ class BrowserPlugin extends DAV\Browser\Plugin
 		$this->config = $config;
 	}
 
+	public function 
+	initialize(DAV\Server $server) 
+	{
+		parent::initialize($server);
+		$this->server = $server;
+		if ($this->enablePost) $this->server->on('method:POST', [$this,'httpPOSTExtra']);
+	}
+
+
     	/**
-    	 * Handles POST requests for tree operations.
+    	 * Handles POST requests for tree operations not handled in the SabreDAV parent clas
     	 *
     	 * @param RequestInterface $request
     	 * @param ResponseInterface $response
     	 * @return bool
     	 */
-    	function httpPOST(RequestInterface $request, ResponseInterface $response) {
+	public function 
+	httpPOSTExtra(RequestInterface $request, ResponseInterface $response) 
+	{
 
-    	    $contentType = $request->getHeader('Content-Type');
-    	    list($contentType) = explode(';', $contentType);
-    	    if ($contentType !== 'application/x-www-form-urlencoded' &&
-    	        $contentType !== 'multipart/form-data') {
-    	            return;
-    	    }
-    	    $postVars = $request->getPostData();
+		$contentType = $request->getHeader('Content-Type');
+		list($contentType) = explode(';', $contentType);
+		if ($contentType !== 'application/x-www-form-urlencoded' &&
+		$contentType !== 'multipart/form-data') {
+			return;
+		}
 
-    	    if (!isset($postVars['sabreAction']))
-    	        return;
+		$postVars = $request->getPostData();
+		
+		if (!isset($postVars['sabreActionExtra']))
+			return;
 
-    	    $uri = $request->getPath();
+		$uri = $request->getPath();
+		
+		switch($postVars['sabreActionExtra']) {
+			case 'del':
+				if (isset($postVars['path'])) {
+					// Using basename() because we won't allow slashes
+					list(, $Name) = \Sabre\HTTP\URLUtil::splitPath(trim($postVars['path']));
+					if(!empty($Name) && $this->config->browserplugin_enable_delete === true) {
+						$this->server->tree->delete($uri . '/' . $Name);
+					}
+				}
+				break;
+		}
 
-    	    if ($this->server->emit('onBrowserPostAction', [$uri, $postVars['sabreAction'], $postVars])) {
-
-    	        switch ($postVars['sabreAction']) {
-
-    	            case 'mkcol' :
-    	                if (isset($postVars['name']) && trim($postVars['name'])) {
-    	                    // Using basename() because we won't allow slashes
-    	                    list(, $folderName) = URLUtil::splitPath(trim($postVars['name']));
-
-    	                    if (isset($postVars['resourceType'])) {
-    	                        $resourceType = explode(',', $postVars['resourceType']);
-    	                    } else {
-    	                        $resourceType = ['{DAV:}collection'];
-    	                    }
-
-    	                    $properties = [];
-    	                    foreach ($postVars as $varName => $varValue) {
-    	                        // Any _POST variable in clark notation is treated
-    	                        // like a property.
-    	                        if ($varName[0] === '{') {
-    	                            // PHP will convert any dots to underscores.
-    	                            // This leaves us with no way to differentiate
-    	                            // the two.
-    	                            // Therefore we replace the string *DOT* with a
-    	                            // real dot. * is not allowed in uris so we
-    	                            // should be good.
-    	                            $varName = str_replace('*DOT*', '.', $varName);
-    	                            $properties[$varName] = $varValue;
-    	                        }
-    	                    }
-
-    	                    $mkCol = new MkCol(
-    	                        $resourceType,
-    	                        $properties
-    	                    );
-    	                    $this->server->createCollection($uri . '/' . $folderName, $mkCol);
-    	                }
-    	                break;
-
-    	            // @codeCoverageIgnoreStart
-    	            case 'put' :
-
-    	                if ($_FILES) $file = current($_FILES);
-    	                else break;
-
-    	                list(, $newName) = URLUtil::splitPath(trim($file['name']));
-    	                if (isset($postVars['name']) && trim($postVars['name']))
-    	                    $newName = trim($postVars['name']);
-
-    	                // Making sure we only have a 'basename' component
-    	                list(, $newName) = URLUtil::splitPath($newName);
-
-    	                if (is_uploaded_file($file['tmp_name'])) {
-    	                    $this->server->createFile($uri . '/' . $newName, fopen($file['tmp_name'], 'r'));
-    	                }
-    	                break;
-    	            // @codeCoverageIgnoreEnd
-
-    	    	    case 'del':
-    	                if (isset($postVars['path'])) {
-    	    			$this->server->tree->delete(trim($postVars['path']));
-    	    	    	}
-    	    	    	break;
-    	        }
-
-    	    }
-    	    $response->setHeader('Location', $request->getUrl());
-    	    $response->setStatus(302);
-    	    return false;
-
-    	}
+		$response->setHeader('Location', $request->getUrl());
+		$response->setStatus(302);
+		return false;
+	}
 
 	public function
 	generateDirectoryIndex ($path)
@@ -184,7 +142,9 @@ HTML;
           <th>Type</th>
           <th>Size</th>
           <th>Last modified</th>
-          <th>Delete</th>
+HTML;
+	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<th>Delete</th>"; }
+	  $html .= <<<HTML
         </tr>
       </thead>
       <tbody>
@@ -202,7 +162,9 @@ HTML;
           <td>[parent]</td>
           <td></td>
           <td></td>
-	  <td></td>
+HTML;
+	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<td></td>"; }
+	  $html .= <<<HTML
         </tr>
 
 HTML;
@@ -258,13 +220,16 @@ HTML;
 				$html .= "          <td>$type</td>\n";
 				$html .= "          <td>$size</td>\n";
 				$html .= "          <td>$lastmodified</td>\n";
-				$html .= "          <td>\n";
-				$html .= "          <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm('Are you sure you want to delete " . $subProps['displayPath']. "');\">\n";
-				$html .= "          <input name=\"sabreAction\" value=\"del\" type=\"hidden\">\n";
-				$html .= "          <input name=\"path\" value=\"$fullPath_decoded\" type=\"hidden\">\n";
-				$html .= "          <input value=\"Delete\" type=\"submit\">\n";
-				$html .= "          </form>\n";
-				$html .= "          </td>\n";
+
+				if ($this->config->browserplugin_enable_delete === true) { 
+					$html .= "          <td>\n";
+					$html .= "          <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm('Are you sure you want to delete " . $subProps['displayPath']. "');\">\n";
+					$html .= "          <input name=\"sabreActionExtra\" value=\"del\" type=\"hidden\">\n";
+					$html .= "          <input name=\"path\" value=\"$fullPath_decoded\" type=\"hidden\">\n";
+					$html .= "          <input value=\"Delete\" type=\"submit\">\n";
+					$html .= "          </form>\n";
+					$html .= "          </td>\n";
+				}
 				$html .= "        </tr>\n";
 			}
 		}

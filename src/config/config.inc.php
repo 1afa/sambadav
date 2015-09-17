@@ -118,4 +118,6 @@ return array(
 	// in order of verboseness from least to most:
 	'log_level' => 'warn',
 
+	// Set to true to enable delete buttons in web interface
+	'browserplugin_enable_delete' => false,
 );
