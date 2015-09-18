@@ -26,11 +26,63 @@ use Sabre\DAV,
 
 class BrowserPlugin extends DAV\Browser\Plugin
 {
+	
 	public function
 	__construct ($config)
 	{
 		parent::__construct();
 		$this->config = $config;
+	}
+
+	public function 
+	initialize(DAV\Server $server) 
+	{
+		parent::initialize($server);
+		$this->server = $server;
+		if ($this->enablePost) $this->server->on('method:POST', [$this,'httpPOSTExtra']);
+	}
+
+
+    	/**
+    	 * Handles POST requests for tree operations not handled in the SabreDAV parent clas
+    	 *
+    	 * @param RequestInterface $request
+    	 * @param ResponseInterface $response
+    	 * @return bool
+    	 */
+	public function 
+	httpPOSTExtra(RequestInterface $request, ResponseInterface $response) 
+	{
+
+		$contentType = $request->getHeader('Content-Type');
+		list($contentType) = explode(';', $contentType);
+		if ($contentType !== 'application/x-www-form-urlencoded' &&
+		$contentType !== 'multipart/form-data') {
+			return;
+		}
+
+		$postVars = $request->getPostData();
+		
+		if (!isset($postVars['sabreActionExtra']))
+			return;
+
+		$uri = $request->getPath();
+		
+		switch($postVars['sabreActionExtra']) {
+			case 'del':
+				if (isset($postVars['path'])) {
+					// Using basename() because we won't allow slashes
+					list(, $Name) = \Sabre\HTTP\URLUtil::splitPath(trim($postVars['path']));
+					if(!empty($Name) && $this->config->browserplugin_enable_delete === true) {
+						$this->server->tree->delete($uri . '/' . $Name);
+					}
+				}
+				break;
+		}
+
+		$response->setHeader('Location', $request->getUrl());
+		$response->setStatus(302);
+		return false;
 	}
 
 	public function
@@ -90,6 +142,9 @@ HTML;
           <th>Type</th>
           <th>Size</th>
           <th>Last modified</th>
+HTML;
+	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<th>Delete</th>"; }
+	  $html .= <<<HTML
         </tr>
       </thead>
       <tbody>
@@ -107,6 +162,9 @@ HTML;
           <td>[parent]</td>
           <td></td>
           <td></td>
+HTML;
+	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<td></td>"; }
+	  $html .= <<<HTML
         </tr>
 
 HTML;
@@ -141,6 +199,7 @@ HTML;
 					? $subProps['{DAV:}getlastmodified']->getTime()->format('F j, Y, H:i:s')
 					: '';
 
+				$fullPath_decoded = URLUtil::decodePath($subProps['fullPath']);
 				$fullPath = $this->escapeHTML($subProps['fullPath']);
 
 				if (isset($subProps['{DAV:}resourcetype']) && in_array('{DAV:}collection', $subProps['{DAV:}resourcetype']->getValue())) {
@@ -161,6 +220,16 @@ HTML;
 				$html .= "          <td>$type</td>\n";
 				$html .= "          <td>$size</td>\n";
 				$html .= "          <td>$lastmodified</td>\n";
+
+				if ($this->config->browserplugin_enable_delete === true) { 
+					$html .= "          <td>\n";
+					$html .= "          <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm('Are you sure you want to delete " . $subProps['displayPath']. "');\">\n";
+					$html .= "          <input name=\"sabreActionExtra\" value=\"del\" type=\"hidden\">\n";
+					$html .= "          <input name=\"path\" value=\"$fullPath_decoded\" type=\"hidden\">\n";
+					$html .= "          <input value=\"Delete\" type=\"submit\">\n";
+					$html .= "          </form>\n";
+					$html .= "          </td>\n";
+				}
 				$html .= "        </tr>\n";
 			}
 		}
