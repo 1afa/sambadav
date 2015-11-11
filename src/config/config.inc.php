@@ -60,6 +60,9 @@ return array(
 	'ldap_host' => null,
 	'ldap_basedn' => null,
 
+	// Port the LDAP server listens on. Default is 389.
+	'ldap_port' => 389,
+
 	// LDAP bind method, 'bind' for an AD style bind, 'fastbind' for a user bind:
 	'ldap_method' => 'fastbind',
 

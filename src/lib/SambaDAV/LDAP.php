@@ -23,6 +23,7 @@ class LDAP
 {
 	public $method = null;
 	public $host = null;
+	public $port = null;
 	public $basedn = null;
 	public $userhome = null;
 
@@ -36,10 +37,11 @@ class LDAP
 	const CONFIG_FILE = '/etc/ldap.conf';
 
 	public function
-	__construct ($method = self::METHOD_FASTBIND, $host = null, $basedn = null, $authdn = null, $authpass = null)
+	__construct ($method = self::METHOD_FASTBIND, $host = null, $basedn = null, $authdn = null, $authpass = null, $port = 389)
 	{
 		$this->method = $method;
 		$this->host = $host;
+		$this->port = $port;
 		$this->basedn = $basedn;
 		$this->authdn = $authdn;
 		$this->authpass = $authpass;
@@ -59,7 +61,7 @@ class LDAP
 		if ($this->getParams() === false) {
 			return false;
 		}
-		if (($this->conn = ldap_connect($this->host)) === false) {
+		if (($this->conn = ldap_connect($this->host, $this->port)) === false) {
 			return false;
 		}
 		if (ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3) === false) {
