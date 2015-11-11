@@ -150,7 +150,7 @@ class Auth
 			? LDAP::METHOD_BIND
 			: LDAP::METHOD_FASTBIND;
 
-		$ldap = new LDAP($method, $this->config->ldap_host, $this->config->ldap_basedn, $this->config->ldap_authdn, $this->config->ldap_authpass);
+		$ldap = new LDAP($method, $this->config->ldap_host, $this->config->ldap_basedn, $this->config->ldap_authdn, $this->config->ldap_authpass, $this->config->ldap_port);
 
 		if (($username = $this->ldapUsername()) === false) {
 			$this->log->info("LDAP username not found\n");
