@@ -1,19 +1,24 @@
 {
 	"name" : "1afa/sambadav",
 	"require" : {
-		"sabre/dav" : "~3.0.0"
+		"sabre/dav" : "~3.0.5"
 	},
 	"license" : "agpl",
 	"authors" : [
 		{
+			"name" : "Richard de Vroede",
+			"email" : "richard@1afa.com",
+			"role" : "Developer"
+		},
+		{
 			"name" : "Alfred Klomp",
 			"email" : "alfred@1afa.com",
-			"role" : "Developer"
+			"role" : "Initial creator"
 		}
 	],
 	"autoload" : {
-		"psr-0" : {
-			"SambaDAV" : "lib/"
+		"psr-4" : {
+			"SambaDAV\\" : "lib/"
 		}
 	},
 	"minimum-stability" : "stable"
