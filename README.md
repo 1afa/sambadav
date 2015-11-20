@@ -704,6 +704,12 @@ statements.) Include a mention of what you think the output should be.
 
 ## Upgrading
 
+### From 0.5 to 0.6
+
+If you want to migrate an older config, you need to add the new config options:
+- `'ldap_port' => 389,`
+- `'browserplugin_enable_delete' => false,`
+
 ### From 0.4 to 0.5
 
 If you want to migrate an older config, you probably need to add the new
