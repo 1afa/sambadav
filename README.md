@@ -1,3 +1,7 @@
+**Note:** There are now many enterprise-
+grade solutions available, like [Nextcloud](https://nextcloud.com/). Therefor
+this repository is no longer maintained.
+
 ![SambaDAV](https://raw.github.com/1afa/sambadav/master/img/png/logo.png)
 
 # SambaDAV
