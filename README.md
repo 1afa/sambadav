@@ -116,7 +116,7 @@ but SambaDAV was written because those projects show their age and did not fit o
 needs.
 
 At the start of 2015 the project was transferred to the company developing the
-aforementioned line of SME servers, [1A First Alternative](http://www.1a-first-alternative.com).
+aforementioned line of SME servers, [1A First Alternative](http://www.1afa.com).
 
 ## License
 
