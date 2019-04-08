@@ -38,6 +38,7 @@ class Directory extends DAV\FSExt\Directory
 		$this->cache = $cache;
 		$this->log = $log;
 		$this->smb = $smb;
+		parent::__construct($uri->path());
 	}
 
 	public function
