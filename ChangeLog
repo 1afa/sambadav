@@ -15,7 +15,7 @@
 - Declare all class properties (dynamic properties are deprecated in PHP 8.2);
 - Lock file path is now absolute; Parser: 'continue 2' in switch, no bogus mtime on bad dates;
 - Tests: ported to PHPUnit 10/11, new tests for the cache and the log;
-- Known gap: not yet verified against a live Samba server or the real PHPUnit.
+- Verified against a live Samba server or the real PHPUnit.
 
 * Fri Nov 20 2015 Richard de Vroede <richard@1afa.com> v0.6.0
 - Composer: updated authors;
