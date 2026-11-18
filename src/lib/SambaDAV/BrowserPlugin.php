@@ -27,12 +27,14 @@ use Sabre\HTTP\ResponseInterface;
 class BrowserPlugin extends DAV\Browser\Plugin
 {
 	private $config;
-	
+	private $theme;
+
 	public function
 	__construct ($config)
 	{
 		parent::__construct();
 		$this->config = $config;
+		$this->theme = new Theme($config);
 	}
 
 	public function 
@@ -86,170 +88,224 @@ class BrowserPlugin extends DAV\Browser\Plugin
 		return false;
 	}
 
+	// Name of the directory entry, as a string safe for HTML:
+	private function
+	esc ($value)
+	{
+		return Theme::escape($value);
+	}
+
+	// The breadcrumb trail: "Shares / share / dir / subdir", every part
+	// but the last one a link:
+	private function
+	breadcrumbs ($path, $baseuri)
+	{
+		$home = Theme::icon('home') . '<span>Shares</span>';
+
+		if ($path === '') {
+			return '';
+		}
+		$html = '<li><a href="' . $this->esc($baseuri) . "\">{$home}</a></li>";
+
+		$segments = explode('/', $path);
+		$last = count($segments) - 1;
+		$acc = '';
+
+		foreach ($segments as $i => $segment) {
+			$acc .= ($acc === '' ? '' : '/') . $segment;
+
+			if ($i === $last) {
+				$html .= '<li aria-current="page"><span>' . $this->esc($segment) . '</span></li>';
+				continue;
+			}
+			$href = HTTP\encodePath($baseuri . $acc);
+			$html .= '<li><a href="' . $this->esc($href) . '">' . $this->esc($segment) . '</a></li>';
+		}
+		return $html;
+	}
+
+	// One table row for a directory entry:
+	private function
+	row ($props, $canDelete)
+	{
+		$isDir = isset($props['{DAV:}resourcetype'])
+			&& in_array('{DAV:}collection', $props['{DAV:}resourcetype']->getValue());
+
+		$name = $props['displayPath'];
+		$icon = FileType::icon($name, $isDir);
+		$href = $this->esc($props['fullPath']);
+
+		$size = ($isDir)
+			? '<span class="muted">&mdash;</span>'
+			: $this->esc(FileType::humanSize($props['{DAV:}getcontentlength'] ?? null));
+
+		$date = '';
+		$dateTitle = '';
+		if (isset($props['{DAV:}getlastmodified'])) {
+			// Show the time in the server's own timezone, not in UTC:
+			$time = clone $props['{DAV:}getlastmodified']->getTime();
+			$time->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+			$date = $time->format('Y-m-d H:i');
+			$dateTitle = $time->format('Y-m-d H:i:s T');
+		}
+		$class = $isDir ? 'dir' : 'file';
+
+		$html  = "        <tr class=\"{$class}\">\n";
+		$html .= "          <td class=\"col-name\"><a href=\"{$href}\"><span class=\"icon icon-{$icon}\" aria-hidden=\"true\"></span><span class=\"name\">" . $this->esc($name) . "</span></a>"
+		       . (($date !== '') ? "<div class=\"meta\">{$date}</div>" : '') . "</td>\n";
+		$html .= "          <td class=\"col-size\">{$size}</td>\n";
+		$html .= '          <td class="col-date" title="' . $this->esc($dateTitle) . "\">{$date}</td>\n";
+
+		if ($canDelete) {
+			// The name ends up in a JavaScript string inside an HTML attribute:
+			$confirm = $this->esc(json_encode(
+				'Are you sure you want to delete ' . $name . '?',
+				JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+			));
+			$decoded = $this->esc(HTTP\decodePath($props['fullPath']));
+			$label = $this->esc('Delete ' . $name);
+
+			$html .= "          <td class=\"col-act\">\n";
+			$html .= "            <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm({$confirm});\">\n";
+			$html .= "              <input name=\"sabreActionExtra\" value=\"del\" type=\"hidden\">\n";
+			$html .= "              <input name=\"path\" value=\"{$decoded}\" type=\"hidden\">\n";
+			$html .= "              <button class=\"icon-btn danger\" type=\"submit\" title=\"{$label}\" aria-label=\"{$label}\">" . Theme::icon('delete') . "</button>\n";
+			$html .= "            </form>\n";
+			$html .= "          </td>\n";
+		}
+		return $html . "        </tr>\n";
+	}
+
 	public function
 	generateDirectoryIndex ($path)
 	{
-		$version = (DAV\Server::$exposeVersion)
-			? DAV\Version::VERSION
-			: '';
-
+		$path = (string)$path;
+		$baseuri = $this->server->getBaseUri();
 		$node = $this->server->tree->getNodeForPath($path);
 
-		$html = <<<HTML
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Index for {$this->escapeHTML($path)}/ - SambaDAV</title>
-    <link rel="stylesheet" href="{$this->server->getBaseUri()}style.css"/>
-    <link rel="shortcut icon" href="{$this->server->getBaseUri()}favicon.ico" type="image/vnd.microsoft.icon"/>
-  </head>
-  <body>
+		$canDelete = ($this->config->browserplugin_enable_delete === true);
+		$isRoot = ($path === '');
 
-HTML;
+		[, $here] = \Sabre\Uri\split($path);
+		$heading = $isRoot ? 'Shares' : $here;
+		$smbpath = (!$isRoot && $node instanceof Directory) ? $node->uri->uriFull() : '';
+
+		$siteTitle = ($this->theme->title() !== '') ? $this->theme->title() : Theme::DEFAULT_TITLE;
+		$pageTitle = $this->esc($heading . ' – ' . $siteTitle);
+
+		$styles = $this->theme->stylesheets($baseuri);
+		$brand = $this->theme->brand($baseuri);
+		$crumbs = $this->breadcrumbs($path, $baseuri);
+		$crumbs = ($crumbs !== '')
+			? "<nav class=\"crumbs\" aria-label=\"Location\"><ol>{$crumbs}</ol></nav>"
+			: '';
+		$h1 = $this->esc($heading);
+
+		$logout = '';
 		if ($this->config->anonymous_only === false) {
-			$html .= "
-    <p id=\"logout\"><a href=\"?logout\">switch user (logout)</a></p>";
+			$logout = '<a class="logout" href="?logout">' . Theme::icon('logout') . '<span>Sign out</span></a>';
 		}
+		$smbline = ($smbpath !== '')
+			? '<p class="smbpath">' . $this->esc($smbpath) . '</p>'
+			: '';
 
-		$html .= <<<HTML
-    <h1>{$this->escapeHTML($node->uri->uriFull())}</h1>
-    <table id="actions">
-      <tbody>
-
-HTML;
+		// Actions panel (new folder, upload), if any plugin has something to show:
 		$output = '';
 		if ($this->enablePost) {
 			$this->server->emit('onHTMLActionsPanel', [$node, &$output, $path]);
 		}
-		if ($output) {
-			$html .= $output;
-		}
-		$html .= <<<HTML
-      </tbody>
-    </table>
-    <table>
-      <colgroup>
-        <col width="15px"/>
-        <col/>
-        <col/>
-        <col/>
-        <col/>
-      </colgroup>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Size</th>
-          <th>Last modified</th>
-HTML;
-	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<th>Delete</th>"; }
-	  $html .= <<<HTML
-        </tr>
-      </thead>
-      <tbody>
+		$actions = ($output !== '')
+			? "<section class=\"actions\" aria-label=\"Actions\">\n{$output}\n    </section>"
+			: '';
 
-HTML;
+		// The rows of the listing:
+		$rows = '';
+		$columns = 3 + ($canDelete ? 1 : 0);
 
-		// If path is empty, there is no parent:
-		if ($path) {
+		if ($path !== '') {
 			[$parentUri] = \Sabre\Uri\split($path);
-			$fullPath = HTTP\encodePath($this->server->getBaseUri() . $parentUri);
-			$html .= <<<HTML
-        <tr class="dir">
-          <td><a href="$fullPath"><img src="{$this->server->getBaseUri()}dir.png" alt="Parent"/></a></td>
-          <td><a href="$fullPath">..</a></td>
-          <td>[parent]</td>
-          <td></td>
-          <td></td>
-HTML;
-	  if ($this->config->browserplugin_enable_delete === true) { $html .= "<td></td>"; }
-	  $html .= <<<HTML
-        </tr>
+			$parentHref = $this->esc(HTTP\encodePath($baseuri . $parentUri));
 
-HTML;
+			$rows .= "        <tr class=\"up\">\n";
+			$rows .= "          <td class=\"col-name\"><a href=\"{$parentHref}\"><span class=\"icon icon-up\" aria-hidden=\"true\"></span><span class=\"name\">Parent folder</span></a></td>\n";
+			$rows .= "          <td class=\"col-size\"></td>\n";
+			$rows .= "          <td class=\"col-date\"></td>\n";
+			$rows .= ($canDelete) ? "          <td class=\"col-act\"></td>\n" : '';
+			$rows .= "        </tr>\n";
 		}
+		$entries = [];
+
 		if ($node instanceof DAV\ICollection) {
-			$subNodes = $this->server->getPropertiesForChildren($path, [
+			$entries = $this->server->getPropertiesForChildren($path, [
 				'{DAV:}displayname',
 				'{DAV:}resourcetype',
 				'{DAV:}getcontenttype',
 				'{DAV:}getcontentlength',
 				'{DAV:}getlastmodified',
 			]);
-			foreach ($subNodes as $subPath => $subProps)
-			{
-				$subNode = $this->server->tree->getNodeForPath($subPath);
-				$fullPath = HTTP\encodePath($this->server->getBaseUri() . $subPath);
-				[, $displayPath] = \Sabre\Uri\split($subPath);
-
-				$subNodes[$subPath]['subNode'] = $subNode;
-				$subNodes[$subPath]['fullPath'] = $fullPath;
-				$subNodes[$subPath]['displayPath'] = $displayPath;
+			foreach ($entries as $subPath => $props) {
+				$entries[$subPath]['fullPath'] = HTTP\encodePath($baseuri . $subPath);
+				[, $entries[$subPath]['displayPath']] = \Sabre\Uri\split($subPath);
 			}
-			uasort($subNodes, [$this, 'compareNodes']);
-
-			foreach ($subNodes as $subProps)
-			{
-				$size = (isset($subProps['{DAV:}getcontentlength']))
-					? $subProps['{DAV:}getcontentlength']
-					: '';
-
-				$lastmodified = (isset($subProps['{DAV:}getlastmodified']))
-					? $subProps['{DAV:}getlastmodified']->getTime()->format('F j, Y, H:i:s')
-					: '';
-
-				$fullPath_decoded = HTTP\decodePath($subProps['fullPath']);
-				$fullPath = $this->escapeHTML($subProps['fullPath']);
-
-				if (isset($subProps['{DAV:}resourcetype']) && in_array('{DAV:}collection', $subProps['{DAV:}resourcetype']->getValue())) {
-					$trclass = 'class="dir"';
-					$icon = 'dir.png';
-					$type = 'Directory';
-				}
-				else {
-					$trclass = 'class="file"';
-					$icon = 'file.png';
-					$type = (isset($subProps['{DAV:}getcontenttype']))
-						? $subProps['{DAV:}getcontenttype']
-						: 'Unknown';
-				}
-				$html .= "        <tr $trclass>\n";
-				$html .= "          <td><a href=\"$fullPath\"><img src=\"{$this->server->getBaseUri()}$icon\" alt=\"\"/></a></td>\n";
-				$html .= "          <td><a href=\"$fullPath\">{$this->escapeHTML($subProps['displayPath'])}</a></td>\n";
-				$html .= "          <td>{$this->escapeHTML($type)}</td>\n";
-				$html .= "          <td>$size</td>\n";
-				$html .= "          <td>$lastmodified</td>\n";
-
-				if ($this->config->browserplugin_enable_delete === true) { 
-					$html .= "          <td>\n";
-					// The name ends up in a JavaScript string inside an HTML attribute:
-					$confirm = $this->escapeHTML(json_encode(
-						'Are you sure you want to delete ' . $subProps['displayPath'],
-						JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-					));
-					$html .= "          <form method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return confirm($confirm);\">\n";
-					$html .= "          <input name=\"sabreActionExtra\" value=\"del\" type=\"hidden\">\n";
-					$html .= "          <input name=\"path\" value=\"{$this->escapeHTML($fullPath_decoded)}\" type=\"hidden\">\n";
-					$html .= "          <input value=\"Delete\" type=\"submit\">\n";
-					$html .= "          </form>\n";
-					$html .= "          </td>\n";
-				}
-				$html .= "        </tr>\n";
-			}
+			// Directories first, then by name:
+			uasort($entries, [$this, 'compareNodes']);
 		}
-		$html .= <<<HTML
-      </tbody>
-    </table>
-    <img src="{$this->server->getBaseUri()}logo-sambadav.png" id="sambadav-logo"/><address>Generated by SabreDAV $version</address>
-  </body>
-</html>
-HTML;
+		foreach ($entries as $props) {
+			$rows .= $this->row($props, $canDelete);
+		}
+		if ($entries === []) {
+			$rows .= "        <tr class=\"empty\"><td colspan=\"{$columns}\">This folder is empty.</td></tr>\n";
+		}
+		$deleteHead = ($canDelete) ? '<th class="col-act"><span class="sr-only">Delete</span></th>' : '';
+
+		$version = (DAV\Server::$exposeVersion) ? ' ' . DAV\Version::VERSION : '';
+		$footer = $this->esc('Generated by SabreDAV' . $version);
 
 		$this->server->httpResponse->setHeader('Content-Security-Policy', "img-src 'self'; style-src 'self';");
 
-		return $html;
+		return <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>{$pageTitle}</title>
+    {$styles}    <link rel="shortcut icon" href="{$this->esc($baseuri)}favicon.ico" type="image/vnd.microsoft.icon">
+  </head>
+  <body class="browser">
+    <div class="wrapper">
+      <header class="topbar">
+        <div class="container">
+          {$brand}
+          {$logout}
+        </div>
+      </header>
+      <main class="container content">
+        {$crumbs}
+        <h1>{$h1}</h1>
+        {$smbline}
+        {$actions}
+        <div class="listing">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-name">Name</th>
+                <th class="col-size">Size</th>
+                <th class="col-date">Modified</th>
+                {$deleteHead}
+              </tr>
+            </thead>
+            <tbody>
+{$rows}            </tbody>
+          </table>
+        </div>
+      </main>
+      <footer class="footer"><div class="container">{$footer}</div></footer>
+    </div>
+  </body>
+</html>
+HTML;
 	}
 
 	public function
@@ -258,25 +314,33 @@ HTML;
 		if (!$node instanceof DAV\ICollection) {
 			return;
 		}
+		// Shares cannot be created or filled from the web interface, so do
+		// not offer the forms in the list of shares or of a server's shares:
+		if ($node instanceof Directory && ($node->uri->isGlobalRoot() || $node->uri->isServerRoot())) {
+			return;
+		}
+		$newdir = Theme::icon('newdir');
+		$upload = Theme::icon('upload');
 
 		$output .= <<<HTML
-<tr><form method="post"><input name="sabreAction" value="mkcol" type="hidden">
-  <td><h3>New folder</h3></td>
-  <td><label for="name">Name:</label></td>
-  <td colspan="3"><input name="name" type="text"></td>
-  <td><input value="create" type="submit"></td>
-  </form>
-</tr>
-<tr><form method="post" enctype="multipart/form-data"><input name="sabreAction" value="put" type="hidden">
-  <td><h3>Upload file</h3></td>
-  <td><label for="file">File:</label></td>
-  <td><input name="file" type="file"></td>
-  <td><label for="name">Name (optional):</label></td>
-  <td><input name="name" type="text"></td>
-  <td><input value="upload" type="submit"></td>
-</form></tr>
+      <form class="card" method="post" action="">
+        <h2>{$newdir}<span>New folder</span></h2>
+        <input type="hidden" name="sabreAction" value="mkcol">
+        <div class="field-row">
+          <input type="text" name="name" placeholder="Folder name" aria-label="Folder name" required>
+          <button class="btn primary" type="submit">Create</button>
+        </div>
+      </form>
+      <form class="card" method="post" action="" enctype="multipart/form-data">
+        <h2>{$upload}<span>Upload file</span></h2>
+        <input type="hidden" name="sabreAction" value="put">
+        <div class="field-row">
+          <input type="file" name="file" aria-label="File" required>
+          <input type="text" name="name" placeholder="Save as (optional)" aria-label="Name to save the file as (optional)">
+          <button class="btn primary" type="submit">Upload</button>
+        </div>
+      </form>
 HTML;
-
 	}
 
 }

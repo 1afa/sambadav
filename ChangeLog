@@ -1,3 +1,20 @@
+* Thu Nov 12 2026 v0.8.0 (new web interface)
+- New look for the directory listing and the login page: header with logo and
+  sign out link, breadcrumbs, cards for new folder and upload, file-type icons,
+  light and dark theme, responsive layout (rewritten style.css, new icon-*.svg
+  files and logo.svg; the old dir.png, file.png, spinner.gif and logo-sambadav.png
+  are gone);
+- New options browserplugin_logo, browserplugin_title and browserplugin_css to
+  put your own logo, title and stylesheet in the page header (see README);
+- The new folder and upload forms are no longer shown in the list of shares,
+  where they could not work; the list of shares has no breadcrumb;
+- Sizes are shown as KB/MB/GB and times in the PHP timezone;
+- The login page shows a clear message for a wrong password, no longer depends
+  on a spinner image, and its form still works without JavaScript;
+- Dropped a SabreDAV getNodeForPath() lookup for every row of the listing,
+  which was computed and never used;
+- New classes Theme and FileType, with tests.
+
 * Mon Nov 02 2026 v0.7.0 (PHP 8 / SabreDAV 4 port)
 - Require PHP >= 8.2 and SabreDAV ^4.7 (was SabreDAV 3.0.x on PHP 5);
 - Cache: replace the removed mcrypt extension by OpenSSL AES-256-GCM (authenticated)
@@ -15,7 +32,7 @@
 - Declare all class properties (dynamic properties are deprecated in PHP 8.2);
 - Lock file path is now absolute; Parser: 'continue 2' in switch, no bogus mtime on bad dates;
 - Tests: ported to PHPUnit 10/11, new tests for the cache and the log;
-- Verified against a live Samba server or the real PHPUnit.
+- Known gap: not yet verified against a live Samba server or the real PHPUnit.
 
 * Fri Nov 20 2015 Richard de Vroede <richard@1afa.com> v0.6.0
 - Composer: updated authors;

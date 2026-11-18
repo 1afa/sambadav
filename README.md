@@ -318,8 +318,11 @@ The rewrite rules tell the server to send all requests to `server.php` that
 contain two or more slashes (so are guaranteed to be virtual), and those not
 referencing real files on disk, to `server.php` for processing. Since
 `server.php` is itself a real file on disk, this breaks the loop and avoids
-recursion. Resources such as `style.css` and `dir.png` also happen to be plain
-files in the SambaDAV root, and are available normally.
+recursion. Resources such as `style.css`, `logo.svg` and the `icon-*.svg` file icons
+also happen to be plain files in the SambaDAV root, and are available normally.
+(This is also why the icons and your own logo must live directly in the root: a
+file in a subdirectory would match the first rewrite condition and be sent to
+`server.php`.)
 
 
 ## SambaDAV configuration
@@ -490,6 +493,47 @@ shares on that server, and `server6` containing a single subfolder called `share
 Further customization of the shares listing can be done by configuring Samba to
 produce the required list of shares. SambaDAV is kept simple on purpose.
 
+
+## Customising the look
+
+[#customising-the-look](#customising-the-look)
+
+The web interface has a header with a logo on the left and a "Sign out" link on
+the right, a breadcrumb trail, cards for creating folders and uploading, and a
+listing with an icon per file type. It follows the light or dark setting of the
+visitor's system and works on phones. Three options in `config/config.inc.php`
+change how it looks; each takes the *name of a file in the SambaDAV root*, next
+to `style.css` (a name only: no path, no URL):
+
+- `browserplugin_logo`: the logo for the header and the login page, a PNG or SVG
+  that is shown about 36 pixels high. Defaults to `logo.svg`, which comes with
+  SambaDAV; `false` shows no logo.
+- `browserplugin_title`: the text next to the logo, which is also in the title of
+  every page. Defaults to `SambaDAV`. Use `''` for no text, if your logo already
+  contains the name.
+- `browserplugin_css`: an extra stylesheet, loaded after `style.css`, so that you
+  do not have to edit `style.css` and lose your changes on upgrade.
+
+Most of the look hangs on a handful of CSS variables, listed at the top of
+`style.css`. A `custom.css` with just
+
+```
+:root { --accent: #0d9488; --accent-hover: #0f766e; --accent-soft: rgba(13, 148, 136, .10); }
+```
+
+changes the colour scheme (inside `@media (prefers-color-scheme: dark)` you can
+set different values for the dark theme). The classes in the page are
+deliberately plain: `.topbar`, `.brand`, `.logout`, `.crumbs`, `.actions`,
+`.card`, `.listing`, `.icon-<type>`.
+
+The pages are served with the Content Security Policy `img-src 'self'; style-src
+'self'`. Your logo and stylesheet must therefore be files on the same server;
+inline styles and `data:` images are blocked by the browser.
+
+The file icons are the `icon-*.svg` files (folder, pdf, doc, sheet, slides,
+text, image, audio, video, archive, code, and a generic file). To change which
+extension gets which icon, edit `lib/SambaDAV/FileType.php`; to use your own
+artwork, replace the SVG files with ones of the same name.
 
 # User authentication
 

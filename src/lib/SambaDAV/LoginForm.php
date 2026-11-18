@@ -22,11 +22,13 @@ namespace SambaDAV;
 class LoginForm
 {
 	private $baseuri = null;
+	private $theme = null;
 
 	public function
-	__construct ($baseuri)
+	__construct ($baseuri, $config = null)
 	{
 		$this->baseuri = $baseuri;
+		$this->theme = new Theme($config);
 	}
 
 	public function
@@ -41,7 +43,15 @@ class LoginForm
 		if (($contents = file_get_contents($template)) === false) {
 			return null;
 		}
-		// Substitute {BASEURI}:
-		return str_replace('{BASEURI}', $this->baseuri, $contents);
+		// Substitute the placeholders in the template; all values are
+		// HTML, so everything that comes from outside is escaped first:
+		$title = ($this->theme->title() !== '') ? $this->theme->title() : Theme::DEFAULT_TITLE;
+
+		return strtr($contents, [
+			'{BASEURI}' => Theme::escape($this->baseuri),
+			'{TITLE}'   => Theme::escape($title),
+			'{STYLES}'  => $this->theme->stylesheets($this->baseuri),
+			'{BRAND}'   => $this->theme->brand($this->baseuri),
+		]);
 	}
 }

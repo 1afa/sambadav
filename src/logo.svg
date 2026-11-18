@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="SambaDAV">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="10" fill="url(#g)"/>
+  <path d="M9 14a2.5 2.5 0 0 1 2.5-2.5h6.2a2.5 2.5 0 0 1 1.9.9l1.6 1.9H28.5A2.5 2.5 0 0 1 31 16.8V27.5A2.5 2.5 0 0 1 28.5 30h-17A2.5 2.5 0 0 1 9 27.5z" fill="#fff"/>
+  <path d="M20 26.5v-8M16.6 21.6l3.4-3.4 3.4 3.4" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

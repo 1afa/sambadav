@@ -128,4 +128,21 @@ return array(
 
 	// Set to true to enable delete buttons in web interface
 	'browserplugin_enable_delete' => false,
+
+	// Look of the web interface. These three files live in the SambaDAV root,
+	// next to style.css; give just the file name, not a path or a URL.
+	//
+	// Logo shown at the left of the page header and on the login page: a PNG
+	// or SVG, shown at a height of about 36 pixels. 'logo.svg' is the logo that
+	// comes with SambaDAV; false shows no logo.
+	'browserplugin_logo' => 'logo.svg',
+
+	// Text shown next to the logo, and in the title of every page.
+	// An empty string shows no text, which suits a logo that has its own:
+	'browserplugin_title' => 'SambaDAV',
+
+	// Optional extra stylesheet that is loaded after style.css, to change
+	// colours and so on without editing style.css itself (see its header for
+	// the variables you can set), for example 'custom.css'; false for none:
+	'browserplugin_css' => false,
 );

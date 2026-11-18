@@ -204,7 +204,7 @@ class Auth
 	showLoginForm ($auth, $response)
 	{
 		$auth->requireLogin();
-		$loginForm = new LoginForm($this->baseuri);
+		$loginForm = new LoginForm($this->baseuri, $this->config);
 		$response->setBody($loginForm->getBody());
 		HTTP\Sapi::sendResponse($response);
 	}
